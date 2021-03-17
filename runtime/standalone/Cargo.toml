@@ -43,7 +43,25 @@ frame-benchmarking = { version = "3.1.0", default-features = false, optional = t
 frame-system-benchmarking = { version = "3.0.0", default-features = false, optional = true }
 hex-literal = { version = "0.3.1", optional = true }
 
-template = { package = "pallet-template", path = "../pallets/template", version = "2.0.0", default-features = false }
+template = { package = "pallet-template", path = "../../pallets/template", version = "2.0.0", default-features = false }
+
+# Cumulus dependencies
+cumulus-pallet-parachain-system = { default-features = false }
+cumulus-pallet-xcm-handler = { default-features = false }
+cumulus-primitives-core = { default-features = false }
+parachain-info = { default-features = false }
+
+# Polkadot dependencies
+polkadot-parachain = { default-features = false }
+xcm = { default-features = false }
+xcm-builder = { default-features = false }
+xcm-executor = { default-features = false }
+
+# ORML dependencies
+orml-currencies = { default-features = false }
+orml-tokens = { default-features = false }
+orml-traits = { default-features = false }
+orml-xtokens = { default-features = false }
 
 [build-dependencies]
 substrate-wasm-builder = { version = "4.0.0" }
@@ -77,6 +95,20 @@ std = [
 	"frame-system/std",
 	"frame-system-rpc-runtime-api/std",
 	"template/std",
+
+	"cumulus-pallet-parachain-system/std",
+	"cumulus-pallet-xcm-handler/std",
+	"cumulus-primitives-core/std",
+	"parachain-info/std",
+
+	"xcm/std",
+	"xcm-builder/std",
+	"xcm-executor/std",
+
+	"orml-currencies/std",
+	"orml-tokens/std",
+	"orml-traits/std",
+	"orml-xtokens/std",
 ]
 runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",

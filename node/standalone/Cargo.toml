@@ -48,7 +48,7 @@ pallet-transaction-payment-rpc = { version = "3.0.0" }
 frame-benchmarking = { version = "3.1.0" }
 frame-benchmarking-cli = { version = "3.0.0" }
 
-polka-domain-runtime = { path = "../runtime" }
+polka-domain-runtime = { path = "../../runtime/standalone" }
 
 [build-dependencies]
 substrate-build-script-utils = { version = "3.0.0" }

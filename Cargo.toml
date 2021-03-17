@@ -1,8 +1,10 @@
 [workspace]
 members = [
-	"node",
+	"node/parachain",
+	"node/standalone",
 	"pallets/template",
-	"runtime",
+	"runtime/parachain",
+	"runtime/standalone",
 ]
 
 # The list of dependencies below (which can be both direct and indirect dependencies) are crates
@@ -144,3 +146,22 @@ sp-version = { git = "https://github.com/paritytech/substrate.git", branch = "ma
 substrate-build-script-utils = { git = "https://github.com/paritytech/substrate.git", branch = "master" }
 substrate-frame-rpc-system = { git = "https://github.com/paritytech/substrate.git", branch = "master" }
 substrate-wasm-builder = { git = "https://github.com/paritytech/substrate.git", branch = "master" }
+
+# ORML dependencies
+orml-currencies = { git = "https://github.com/open-web3-stack/open-runtime-module-library.git", branch = "master" }
+orml-tokens = { git = "https://github.com/open-web3-stack/open-runtime-module-library.git", branch = "master" }
+orml-traits = { git = "https://github.com/open-web3-stack/open-runtime-module-library.git", branch = "master" }
+orml-xtokens = { git = "https://github.com/open-web3-stack/open-runtime-module-library.git", branch = "master" }
+orml-xcm-support = { git = "https://github.com/open-web3-stack/open-runtime-module-library.git", branch = "master" }
+
+# Cumulus dependencies
+cumulus-pallet-parachain-system = { git = "https://github.com/paritytech/cumulus", branch = "rococo-v1" }
+cumulus-primitives-core = { git = "https://github.com/paritytech/cumulus", branch = "rococo-v1" }
+parachain-info = { git = "https://github.com/paritytech/cumulus", branch = "rococo-v1" }
+cumulus-pallet-xcm-handler = { git = "https://github.com/paritytech/cumulus", branch = "rococo-v1" }
+
+# Polkadot dependencies
+polkadot-parachain = { git = "https://github.com/paritytech/polkadot", branch = "rococo-v1" }
+xcm = { git = "https://github.com/paritytech/polkadot", branch = "rococo-v1" }
+xcm-builder = { git = "https://github.com/paritytech/polkadot", branch = "rococo-v1" }
+xcm-executor = { git = "https://github.com/paritytech/polkadot", branch = "rococo-v1" }
