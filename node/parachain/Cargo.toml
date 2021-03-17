@@ -49,6 +49,7 @@ frame-benchmarking = { version = "3.1.0" }
 frame-benchmarking-cli = { version = "3.0.0" }
 
 polka-domain-parachain-runtime = { path = "../../runtime/parachain" }
+primitives = { package = "polka-domain-primitives", path = "../../primitives" }
 
 [build-dependencies]
 substrate-build-script-utils = { version = "3.0.0" }

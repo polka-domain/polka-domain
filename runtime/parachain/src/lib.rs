@@ -27,10 +27,10 @@ use sp_std::prelude::*;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
 	ApplyExtrinsicResult, generic, create_runtime_str, impl_opaque_keys, MultiSignature,
-	transaction_validity::{TransactionValidity, TransactionSource},
+	transaction_validity::{TransactionValidity, TransactionSource}, DispatchResult,
 };
 use sp_runtime::traits::{
-	BlakeTwo256, Block as BlockT, AccountIdLookup, Verify, IdentifyAccount, NumberFor,
+	BlakeTwo256, Block as BlockT, AccountIdLookup, Verify, IdentifyAccount, NumberFor, Zero,
 };
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
@@ -48,39 +48,25 @@ pub use pallet_balances::Call as BalancesCall;
 pub use sp_runtime::{Permill, Perbill};
 pub use frame_support::{
 	construct_runtime, parameter_types, StorageValue,
-	traits::{KeyOwnerProofSystem, Randomness},
+	traits::{Get, KeyOwnerProofSystem, Randomness},
 	weights::{
 		Weight, IdentityFee,
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
 	},
 };
+use frame_system::EnsureRoot;
 use pallet_transaction_payment::CurrencyAdapter;
 
 /// Import the template pallet.
 pub use template;
 
-/// An index to a block.
-pub type BlockNumber = u32;
-
-/// Alias to 512-bit hash when used in the context of a transaction signature on the chain.
-pub type Signature = MultiSignature;
-
-/// Some way of identifying an account on the chain. We intentionally make it equivalent
-/// to the public key of our transaction signing scheme.
-pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
-
-/// The type for looking up accounts. We don't expect more than 4 billion of them, but you
-/// never know...
-pub type AccountIndex = u32;
-
-/// Balance of an account.
-pub type Balance = u128;
+pub use primitives::{
+	AccountId, AccountIndex, AirDropCurrencyId, Amount, AuctionId, AuthoritysOriginId, Balance, BlockNumber,
+	CurrencyId, DataProviderId, EraIndex, Hash, Moment, Nonce, Share, Signature, TokenSymbol, TradingPair,
+};
 
 /// Index of a transaction in the chain.
 pub type Index = u32;
-
-/// A hash of some data used by the chain.
-pub type Hash = sp_core::H256;
 
 /// Digest item type.
 pub type DigestItem = generic::DigestItem<Hash>;
@@ -280,6 +266,166 @@ impl template::Config for Runtime {
 	type Event = Event;
 }
 
+use parachain_use::*;
+mod parachain_use {
+	pub use orml_xcm_support::{
+		CurrencyIdConverter, IsConcreteWithGeneralKey, MultiCurrencyAdapter, NativePalletAssetOr,
+		XcmHandler as XcmHandlerT,
+	};
+	pub use polkadot_parachain::primitives::Sibling;
+	pub use sp_runtime::traits::{Convert, Identity};
+	pub use sp_std::collections::btree_set::BTreeSet;
+	pub use xcm::v0::{Junction, MultiLocation, NetworkId, Xcm};
+	pub use xcm_builder::{
+		AccountId32Aliases, LocationInverter, ParentIsDefault, RelayChainAsNative, SiblingParachainAsNative,
+		SiblingParachainConvertsVia, SignedAccountId32AsNative, SovereignSignedViaLocation,
+	};
+	pub use xcm_executor::{Config, XcmExecutor};
+}
+
+pub use parachain_impl::*;
+mod parachain_impl {
+	use super::*;
+
+	impl cumulus_pallet_parachain_system::Config for Runtime {
+		type Event = Event;
+		type OnValidationData = ();
+		type SelfParaId = parachain_info::Module<Runtime>;
+		type DownwardMessageHandlers = XcmHandler;
+		type HrmpMessageHandlers = XcmHandler;
+	}
+
+	impl parachain_info::Config for Runtime {}
+
+	parameter_types! {
+		pub const PolkadotNetworkId: NetworkId = NetworkId::Polkadot;
+	}
+
+	pub struct AccountId32Convert;
+	impl Convert<AccountId, [u8; 32]> for AccountId32Convert {
+		fn convert(account_id: AccountId) -> [u8; 32] {
+			account_id.into()
+		}
+	}
+
+	parameter_types! {
+		pub AcalaNetwork: NetworkId = NetworkId::Named("acala".into());
+		pub RelayChainOrigin: Origin = cumulus_pallet_xcm_handler::Origin::Relay.into();
+		pub Ancestry: MultiLocation = MultiLocation::X1(Junction::Parachain {
+			id: ParachainInfo::get().into(),
+		});
+		pub const RelayChainCurrencyId: CurrencyId = CurrencyId::Token(TokenSymbol::DOT);
+	}
+
+	pub type LocationConverter = (
+		ParentIsDefault<AccountId>,
+		SiblingParachainConvertsVia<Sibling, AccountId>,
+		AccountId32Aliases<AcalaNetwork, AccountId>,
+	);
+
+	pub type LocalAssetTransactor = MultiCurrencyAdapter<
+		Currencies,
+		IsConcreteWithGeneralKey<CurrencyId, Identity>,
+		LocationConverter,
+		AccountId,
+		CurrencyIdConverter<CurrencyId, RelayChainCurrencyId>,
+		CurrencyId,
+	>;
+
+	pub type LocalOriginConverter = (
+		SovereignSignedViaLocation<LocationConverter, Origin>,
+		RelayChainAsNative<RelayChainOrigin, Origin>,
+		SiblingParachainAsNative<cumulus_pallet_xcm_handler::Origin, Origin>,
+		SignedAccountId32AsNative<AcalaNetwork, Origin>,
+	);
+
+	parameter_types! {
+		pub NativeOrmlTokens: BTreeSet<(Vec<u8>, MultiLocation)> = {
+			let mut t = BTreeSet::new();
+			//TODO: might need to add other assets based on orml-tokens
+
+			// Plasm
+			t.insert(("SDN".into(), (Junction::Parent, Junction::Parachain { id: 5000 }).into()));
+			// Plasm
+			t.insert(("PLM".into(), (Junction::Parent, Junction::Parachain { id: 5000 }).into()));
+
+			// Hydrate
+			t.insert(("HDT".into(), (Junction::Parent, Junction::Parachain { id: 82406 }).into()));
+
+			t
+		};
+	}
+
+	pub struct XcmConfig;
+	impl Config for XcmConfig {
+		type Call = Call;
+		type XcmSender = XcmHandler;
+		type AssetTransactor = LocalAssetTransactor;
+		type OriginConverter = LocalOriginConverter;
+		//TODO: might need to add other assets based on orml-tokens
+		type IsReserve = NativePalletAssetOr<NativeOrmlTokens>;
+		type IsTeleporter = ();
+		type LocationInverter = LocationInverter<Ancestry>;
+	}
+
+	impl cumulus_pallet_xcm_handler::Config for Runtime {
+		type Event = Event;
+		type XcmExecutor = XcmExecutor<XcmConfig>;
+		type UpwardMessageSender = ParachainSystem;
+		type HrmpMessageSender = ParachainSystem;
+		type SendXcmOrigin = EnsureRoot<AccountId>;
+		type AccountIdConverter = LocationConverter;
+	}
+
+	pub struct HandleXcm;
+	impl XcmHandlerT<AccountId> for HandleXcm {
+		fn execute_xcm(origin: AccountId, xcm: Xcm) -> DispatchResult {
+			XcmHandler::execute_xcm(origin, xcm)
+		}
+	}
+
+	impl orml_xtokens::Config for Runtime {
+		type Event = Event;
+		type Balance = Balance;
+		type ToRelayChainBalance = Identity;
+		type AccountId32Convert = AccountId32Convert;
+		//TODO: change network id if kusama
+		type RelayChainNetworkId = PolkadotNetworkId;
+		type ParaId = ParachainInfo;
+		type XcmHandler = HandleXcm;
+	}
+}
+
+orml_traits::parameter_type_with_key! {
+	pub ExistentialDeposits: |_currency_id: CurrencyId| -> Balance {
+		Zero::zero()
+	};
+}
+
+impl orml_tokens::Config for Runtime {
+	type Event = Event;
+	type Balance = Balance;
+	type Amount = Amount;
+	type CurrencyId = CurrencyId;
+	type WeightInfo = ();
+	type ExistentialDeposits = ExistentialDeposits;
+	type OnDust = ();
+}
+
+parameter_types! {
+	pub const GetBifrostTokenId: CurrencyId = CurrencyId::Token(TokenSymbol::ACA);
+}
+
+pub type BifrostToken = orml_currencies::BasicCurrencyAdapter<Runtime, Balances, Amount, BlockNumber>;
+
+impl orml_currencies::Config for Runtime {
+	type Event = Event;
+	type MultiCurrency = orml_tokens::Module<Runtime>;
+	type NativeCurrency = BifrostToken;
+	type GetNativeCurrencyId = GetBifrostTokenId;
+	type WeightInfo = ();
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
 	pub enum Runtime where
@@ -297,6 +443,16 @@ construct_runtime!(
 		Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
 		// Include the custom logic from the template pallet in the runtime.
 		TemplateModule: template::{Module, Call, Storage, Event<T>},
+
+		// Parachain
+		ParachainSystem: cumulus_pallet_parachain_system::{Module, Call, Storage, Inherent, Event},
+		ParachainInfo: parachain_info::{Module, Storage, Config},
+		XcmHandler: cumulus_pallet_xcm_handler::{Module, Call, Event<T>, Origin},
+		XTokens: orml_xtokens::{Module, Storage, Call, Event<T>},
+
+		// ORML
+		Currencies: orml_currencies::{Module, Call, Event<T>},
+		Tokens: orml_tokens::{Module, Storage, Call, Event<T>, Config<T>},
 	}
 );
 
@@ -499,3 +655,5 @@ impl_runtime_apis! {
 		}
 	}
 }
+
+cumulus_pallet_parachain_system::register_validate_block!(Runtime, Executive);

@@ -17,13 +17,14 @@
 
 use sp_core::{Pair, Public, sr25519};
 use polka_domain_parachain_runtime::{
-	AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig,
-	SudoConfig, SystemConfig, WASM_BINARY, Signature
+	AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, ParachainInfoConfig,
+	TokensConfig, SudoConfig, SystemConfig, WASM_BINARY, Signature
 };
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{Verify, IdentifyAccount};
 use sc_service::ChainType;
+use primitives::{CurrencyId, TokenSymbol};
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -170,5 +171,18 @@ fn testnet_genesis(
 			// Assign network admin rights.
 			key: root_key,
 		},
+		orml_tokens: TokensConfig {
+			endowed_accounts: endowed_accounts
+				.iter()
+				.flat_map(|x| {
+					vec![
+						(x.clone(), CurrencyId::Token(TokenSymbol::ACA), 1 << 60),
+						(x.clone(), CurrencyId::Token(TokenSymbol::AUSD), 1 << 60),
+						(x.clone(), CurrencyId::Token(TokenSymbol::DOT), 1 << 60),
+					]
+				})
+				.collect(),
+		},
+		parachain_info: ParachainInfoConfig { parachain_id: 100.into() },
 	}
 }
