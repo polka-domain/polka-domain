@@ -15,15 +15,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Polka Domain CLI library.
+//! Polka Domain Parachain Collator
+
 #![warn(missing_docs)]
+#![warn(unused_extern_crates)]
 
 mod chain_spec;
 #[macro_use]
 mod service;
 mod cli;
 mod command;
-mod rpc;
 
 fn main() -> sc_cli::Result<()> {
 	command::run()
