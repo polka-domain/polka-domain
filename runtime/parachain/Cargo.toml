@@ -1,7 +1,7 @@
 [package]
-name = "polka-domain-runtime"
+name = "polka-domain-parachain-runtime"
 version = "0.1.0"
-authors = ["alkaidwe <alkaidwe@gmail.com>"]
+authors = ["Alkaid <alkaidwe@gmail.com>"]
 edition = "2018"
 license = "Apache-2.0"
 
@@ -11,20 +11,17 @@ targets = ["x86_64-unknown-linux-gnu"]
 [dependencies]
 codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"] }
 
-pallet-aura = { version = "3.0.0", default-features = false }
 pallet-balances = { version = "3.0.0", default-features = false }
 frame-support = { version = "3.0.0", default-features = false }
-pallet-grandpa = { version = "3.0.0", default-features = false }
 pallet-randomness-collective-flip = { version = "3.0.0", default-features = false }
 pallet-sudo = { version = "3.0.0", default-features = false }
 frame-system = { version = "3.0.0", default-features = false }
 pallet-timestamp = { version = "3.0.0", default-features = false }
 pallet-transaction-payment = { version = "3.0.0", default-features = false }
 frame-executive = { version = "3.0.0", default-features = false }
-serde = { version = "1.0.101", optional = true, features = ["derive"] }
+serde = { version = "1.0.124", optional = true, features = ["derive"] }
 sp-api = { version = "3.0.0", default-features = false }
 sp-block-builder = { default-features = false, version = "3.0.0"}
-sp-consensus-aura = { version = "0.9.0", default-features = false }
 sp-core = { version = "3.0.0", default-features = false }
 sp-inherents = { default-features = false, version = "3.0.0"}
 sp-offchain = { version = "3.0.0", default-features = false }
@@ -43,7 +40,27 @@ frame-benchmarking = { version = "3.1.0", default-features = false, optional = t
 frame-system-benchmarking = { version = "3.0.0", default-features = false, optional = true }
 hex-literal = { version = "0.3.1", optional = true }
 
-template = { package = "pallet-template", path = "../pallets/template", version = "2.0.0", default-features = false }
+template = { package = "pallet-template", path = "../../pallets/template", version = "2.0.0", default-features = false }
+
+# Cumulus dependencies
+cumulus-pallet-parachain-system = { default-features = false }
+cumulus-pallet-xcm-handler = { default-features = false }
+cumulus-primitives-core = { default-features = false }
+parachain-info = { default-features = false }
+
+# Polkadot dependencies
+polkadot-parachain = { default-features = false }
+xcm = { default-features = false }
+xcm-builder = { default-features = false }
+xcm-executor = { default-features = false }
+
+# ORML dependencies
+orml-currencies = { default-features = false }
+orml-tokens = { default-features = false }
+orml-traits = { default-features = false }
+orml-xcm-support = { default-features = false }
+orml-xtokens = { default-features = false }
+primitives = { package = "polka-domain-primitives", path = "../../primitives", default-features = false }
 
 [build-dependencies]
 substrate-wasm-builder = { version = "4.0.0" }
@@ -54,9 +71,7 @@ std = [
 	"codec/std",
 	"frame-executive/std",
 	"frame-support/std",
-	"pallet-aura/std",
 	"pallet-balances/std",
-	"pallet-grandpa/std",
 	"pallet-randomness-collective-flip/std",
 	"pallet-sudo/std",
 	"pallet-timestamp/std",
@@ -65,7 +80,6 @@ std = [
 	"serde",
 	"sp-api/std",
 	"sp-block-builder/std",
-	"sp-consensus-aura/std",
 	"sp-core/std",
 	"sp-inherents/std",
 	"sp-offchain/std",
@@ -76,7 +90,24 @@ std = [
 	"sp-version/std",
 	"frame-system/std",
 	"frame-system-rpc-runtime-api/std",
+
+	"primitives/std",
 	"template/std",
+
+	"cumulus-pallet-parachain-system/std",
+	"cumulus-pallet-xcm-handler/std",
+	"cumulus-primitives-core/std",
+	"parachain-info/std",
+
+	"xcm/std",
+	"xcm-builder/std",
+	"xcm-executor/std",
+
+	"orml-currencies/std",
+	"orml-tokens/std",
+	"orml-traits/std",
+	"orml-xcm-support/std",
+	"orml-xtokens/std",
 ]
 runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
