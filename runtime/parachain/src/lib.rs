@@ -26,11 +26,11 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use sp_std::prelude::*;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
-	ApplyExtrinsicResult, generic, create_runtime_str, impl_opaque_keys, MultiSignature,
+	ApplyExtrinsicResult, generic, create_runtime_str, impl_opaque_keys,
 	transaction_validity::{TransactionValidity, TransactionSource}, DispatchResult,
 };
 use sp_runtime::traits::{
-	BlakeTwo256, Block as BlockT, AccountIdLookup, Verify, IdentifyAccount, NumberFor, Zero,
+	BlakeTwo256, Block as BlockT, AccountIdLookup, Zero,
 };
 use sp_api::impl_runtime_apis;
 use sp_version::RuntimeVersion;
@@ -54,12 +54,9 @@ pub use frame_support::{
 use frame_system::EnsureRoot;
 use pallet_transaction_payment::CurrencyAdapter;
 
-/// Import the template pallet.
-pub use template;
-
 pub use primitives::{
-	AccountId, AccountIndex, AirDropCurrencyId, Amount, AuctionId, AuthoritysOriginId, Balance, BlockNumber,
-	CurrencyId, DataProviderId, EraIndex, Hash, Moment, Nonce, Share, Signature, TokenSymbol, TradingPair,
+	AccountId, AccountIndex, Amount, AuctionId, Balance, BlockNumber,
+	CurrencyId, EraIndex, Hash, Moment, Nonce, Share, Signature, TokenSymbol,
 };
 
 /// Index of a transaction in the chain.
@@ -232,9 +229,9 @@ impl pallet_sudo::Config for Runtime {
 	type Call = Call;
 }
 
-/// Configure the pallet template in pallets/template.
-impl template::Config for Runtime {
+impl domain::Config for Runtime {
 	type Event = Event;
+	type Call = Call;
 }
 
 use parachain_use::*;
@@ -261,7 +258,7 @@ mod parachain_impl {
 	impl cumulus_pallet_parachain_system::Config for Runtime {
 		type Event = Event;
 		type OnValidationData = ();
-		type SelfParaId = parachain_info::Module<Runtime>;
+		type SelfParaId = parachain_info::Pallet<Runtime>;
 		type DownwardMessageHandlers = XcmHandler;
 		type HrmpMessageHandlers = XcmHandler;
 	}
@@ -280,7 +277,7 @@ mod parachain_impl {
 	}
 
 	parameter_types! {
-		pub AcalaNetwork: NetworkId = NetworkId::Named("acala".into());
+		pub PolkaDomainNetwork: NetworkId = NetworkId::Named("polkadomain".into());
 		pub RelayChainOrigin: Origin = cumulus_pallet_xcm_handler::Origin::Relay.into();
 		pub Ancestry: MultiLocation = MultiLocation::X1(Junction::Parachain {
 			id: ParachainInfo::get().into(),
@@ -291,7 +288,7 @@ mod parachain_impl {
 	pub type LocationConverter = (
 		ParentIsDefault<AccountId>,
 		SiblingParachainConvertsVia<Sibling, AccountId>,
-		AccountId32Aliases<AcalaNetwork, AccountId>,
+		AccountId32Aliases<PolkaDomainNetwork, AccountId>,
 	);
 
 	pub type LocalAssetTransactor = MultiCurrencyAdapter<
@@ -307,7 +304,7 @@ mod parachain_impl {
 		SovereignSignedViaLocation<LocationConverter, Origin>,
 		RelayChainAsNative<RelayChainOrigin, Origin>,
 		SiblingParachainAsNative<cumulus_pallet_xcm_handler::Origin, Origin>,
-		SignedAccountId32AsNative<AcalaNetwork, Origin>,
+		SignedAccountId32AsNative<PolkaDomainNetwork, Origin>,
 	);
 
 	parameter_types! {
@@ -320,8 +317,13 @@ mod parachain_impl {
 			// Plasm
 			t.insert(("PLM".into(), (Junction::Parent, Junction::Parachain { id: 5000 }).into()));
 
-			// Hydrate
-			t.insert(("HDT".into(), (Junction::Parent, Junction::Parachain { id: 82406 }).into()));
+			t.insert(("AUSD".into(), (Junction::Parent, Junction::Parachain { id: 2020 }).into()));
+			t.insert(("DOT".into(), (Junction::Parent, Junction::Parachain { id: 2020 }).into()));
+			t.insert(("KSM".into(), (Junction::Parent, Junction::Parachain { id: 2020 }).into()));
+
+			t.insert(("AUSD".into(), (Junction::Parent, Junction::Parachain { id: 2021 }).into()));
+			t.insert(("DOT".into(), (Junction::Parent, Junction::Parachain { id: 2021 }).into()));
+			t.insert(("KSM".into(), (Junction::Parent, Junction::Parachain { id: 2021 }).into()));
 
 			t
 		};
@@ -384,16 +386,16 @@ impl orml_tokens::Config for Runtime {
 }
 
 parameter_types! {
-	pub const GetBifrostTokenId: CurrencyId = CurrencyId::Token(TokenSymbol::ACA);
+	pub const GetPolkaDomainTokenId: CurrencyId = CurrencyId::Token(TokenSymbol::ACA);
 }
 
-pub type BifrostToken = orml_currencies::BasicCurrencyAdapter<Runtime, Balances, Amount, BlockNumber>;
+pub type PolkaDomainToken = orml_currencies::BasicCurrencyAdapter<Runtime, Balances, Amount, BlockNumber>;
 
 impl orml_currencies::Config for Runtime {
 	type Event = Event;
-	type MultiCurrency = orml_tokens::Module<Runtime>;
-	type NativeCurrency = BifrostToken;
-	type GetNativeCurrencyId = GetBifrostTokenId;
+	type MultiCurrency = orml_tokens::Pallet<Runtime>;
+	type NativeCurrency = PolkaDomainToken;
+	type GetNativeCurrencyId = GetPolkaDomainTokenId;
 	type WeightInfo = ();
 }
 
@@ -404,24 +406,24 @@ construct_runtime!(
 		NodeBlock = opaque::Block,
 		UncheckedExtrinsic = UncheckedExtrinsic
 	{
-		System: frame_system::{Module, Call, Config, Storage, Event<T>},
-		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Module, Call, Storage},
-		Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
-		Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},
-		TransactionPayment: pallet_transaction_payment::{Module, Storage},
-		Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
-		// Include the custom logic from the template pallet in the runtime.
-		TemplateModule: template::{Module, Call, Storage, Event<T>},
+		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Call, Storage},
+		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
+		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
+
+		Domain: domain::{Pallet, Call, Storage, Event<T>},
 
 		// Parachain
-		ParachainSystem: cumulus_pallet_parachain_system::{Module, Call, Storage, Inherent, Event},
-		ParachainInfo: parachain_info::{Module, Storage, Config},
-		XcmHandler: cumulus_pallet_xcm_handler::{Module, Call, Event<T>, Origin},
-		XTokens: orml_xtokens::{Module, Storage, Call, Event<T>},
+		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event},
+		TransactionPayment: pallet_transaction_payment::{Pallet, Storage},
+		ParachainInfo: parachain_info::{Pallet, Storage, Config},
+		XcmHandler: cumulus_pallet_xcm_handler::{Pallet, Call, Event<T>, Origin},
+		XTokens: orml_xtokens::{Pallet, Storage, Call, Event<T>},
 
 		// ORML
-		Currencies: orml_currencies::{Module, Call, Event<T>},
-		Tokens: orml_tokens::{Module, Storage, Call, Event<T>, Config<T>},
+		Currencies: orml_currencies::{Pallet, Call, Event<T>},
+		Tokens: orml_tokens::{Pallet, Storage, Call, Event<T>, Config<T>},
 	}
 );
 
@@ -455,7 +457,7 @@ pub type Executive = frame_executive::Executive<
 	Block,
 	frame_system::ChainContext<Runtime>,
 	Runtime,
-	AllModules,
+	AllPallets,
 >;
 
 impl_runtime_apis! {
@@ -500,7 +502,7 @@ impl_runtime_apis! {
 		}
 
 		fn random_seed() -> <Block as BlockT>::Hash {
-			RandomnessCollectiveFlip::random_seed()
+			RandomnessCollectiveFlip::random_seed().0
 		}
 	}
 
@@ -559,7 +561,7 @@ impl_runtime_apis! {
 		) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
 			use frame_benchmarking::{Benchmarking, BenchmarkBatch, add_benchmark, TrackedStorageKey};
 
-			use frame_system_benchmarking::Module as SystemBench;
+			use frame_system_benchmarking::Pallet as SystemBench;
 			impl frame_system_benchmarking::Config for Runtime {}
 
 			let whitelist: Vec<TrackedStorageKey> = vec![
@@ -581,7 +583,6 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
 			add_benchmark!(params, batches, pallet_balances, Balances);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
-			add_benchmark!(params, batches, template, TemplateModule);
 
 			if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
 			Ok(batches)
