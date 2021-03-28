@@ -43,7 +43,7 @@ frame-benchmarking = { version = "3.1.0", default-features = false, optional = t
 frame-system-benchmarking = { version = "3.0.0", default-features = false, optional = true }
 hex-literal = { version = "0.3.1", optional = true }
 
-template = { package = "pallet-template", path = "../../pallets/template", version = "2.0.0", default-features = false }
+domain = { package = "pallet-domain", path = "../../pallets/domain", default-features = false }
 
 # Cumulus dependencies
 cumulus-pallet-parachain-system = { default-features = false }
@@ -94,7 +94,8 @@ std = [
 	"sp-version/std",
 	"frame-system/std",
 	"frame-system-rpc-runtime-api/std",
-	"template/std",
+
+	"domain/std",
 
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-pallet-xcm-handler/std",
@@ -119,5 +120,4 @@ runtime-benchmarks = [
 	"frame-system/runtime-benchmarks",
 	"pallet-balances/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
-	"template/runtime-benchmarks",
 ]

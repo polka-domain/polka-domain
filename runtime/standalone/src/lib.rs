@@ -56,9 +56,6 @@ pub use frame_support::{
 };
 use pallet_transaction_payment::CurrencyAdapter;
 
-/// Import the template pallet.
-pub use template;
-
 /// An index to a block.
 pub type BlockNumber = u32;
 
@@ -275,9 +272,9 @@ impl pallet_sudo::Config for Runtime {
 	type Call = Call;
 }
 
-/// Configure the pallet template in pallets/template.
-impl template::Config for Runtime {
+impl domain::Config for Runtime {
 	type Event = Event;
+	type Call = Call;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -287,16 +284,16 @@ construct_runtime!(
 		NodeBlock = opaque::Block,
 		UncheckedExtrinsic = UncheckedExtrinsic
 	{
-		System: frame_system::{Module, Call, Config, Storage, Event<T>},
-		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Module, Call, Storage},
-		Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
-		Aura: pallet_aura::{Module, Config<T>},
-		Grandpa: pallet_grandpa::{Module, Call, Storage, Config, Event},
-		Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},
-		TransactionPayment: pallet_transaction_payment::{Module, Storage},
-		Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
-		// Include the custom logic from the template pallet in the runtime.
-		TemplateModule: template::{Module, Call, Storage, Event<T>},
+		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Call, Storage},
+		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
+		Aura: pallet_aura::{Pallet, Config<T>},
+		Grandpa: pallet_grandpa::{Pallet, Call, Storage, Config, Event},
+		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+		TransactionPayment: pallet_transaction_payment::{Pallet, Storage},
+		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
+
+		Domain: domain::{Pallet, Call, Storage, Event<T>},
 	}
 );
 
@@ -330,7 +327,7 @@ pub type Executive = frame_executive::Executive<
 	Block,
 	frame_system::ChainContext<Runtime>,
 	Runtime,
-	AllModules,
+	AllPallets,
 >;
 
 impl_runtime_apis! {
@@ -375,7 +372,7 @@ impl_runtime_apis! {
 		}
 
 		fn random_seed() -> <Block as BlockT>::Hash {
-			RandomnessCollectiveFlip::random_seed()
+			RandomnessCollectiveFlip::random_seed().0
 		}
 	}
 
@@ -395,8 +392,8 @@ impl_runtime_apis! {
 	}
 
 	impl sp_consensus_aura::AuraApi<Block, AuraId> for Runtime {
-		fn slot_duration() -> u64 {
-			Aura::slot_duration()
+		fn slot_duration() -> sp_consensus_aura::SlotDuration {
+			sp_consensus_aura::SlotDuration::from_millis(Aura::slot_duration())
 		}
 
 		fn authorities() -> Vec<AuraId> {
@@ -470,7 +467,7 @@ impl_runtime_apis! {
 		) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
 			use frame_benchmarking::{Benchmarking, BenchmarkBatch, add_benchmark, TrackedStorageKey};
 
-			use frame_system_benchmarking::Module as SystemBench;
+			use frame_system_benchmarking::Pallet as SystemBench;
 			impl frame_system_benchmarking::Config for Runtime {}
 
 			let whitelist: Vec<TrackedStorageKey> = vec![
@@ -492,7 +489,6 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
 			add_benchmark!(params, batches, pallet_balances, Balances);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
-			add_benchmark!(params, batches, template, TemplateModule);
 
 			if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
 			Ok(batches)

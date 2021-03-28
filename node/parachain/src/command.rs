@@ -38,16 +38,10 @@ use sp_runtime::traits::Block as BlockT;
 use std::{io::Write, net::SocketAddr};
 
 fn load_spec(
-	id: &str,
+	_id: &str,
 	para_id: ParaId,
 ) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
-	match id {
-		"staging" => Ok(Box::new(chain_spec::staging_test_net(para_id))),
-		"" => Ok(Box::new(chain_spec::get_chain_spec(para_id))),
-		path => Ok(Box::new(chain_spec::ChainSpec::from_json_file(
-			path.into(),
-		)?)),
-	}
+	Ok(Box::new(chain_spec::get_chain_spec(para_id)))
 }
 
 impl SubstrateCli for Cli {
@@ -208,7 +202,6 @@ pub fn run() -> Result<()> {
 					&polkadot_cli,
 					&polkadot_cli,
 					config.task_executor.clone(),
-					None,
 				)
 					.map_err(|err| format!("Relay chain argument error: {}", err))?;
 
@@ -303,7 +296,6 @@ pub fn run() -> Result<()> {
 					&polkadot_cli,
 					&polkadot_cli,
 					task_executor,
-					config.telemetry_handle.clone(),
 				)
 					.map_err(|err| format!("Relay chain argument error: {}", err))?;
 				let collator = cli.run.base.validator || cli.collator;
@@ -380,7 +372,7 @@ impl CliConfiguration<Self> for RelayChainCli {
 		self.base.base.prometheus_config(default_listen_port)
 	}
 
-	fn init<C: SubstrateCli>(&self) -> Result<sc_telemetry::TelemetryWorker> {
+	fn init<C: SubstrateCli>(&self) -> Result<()> {
 		unreachable!("PolkadotCli is never initialized; qed");
 	}
 

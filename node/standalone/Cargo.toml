@@ -33,7 +33,7 @@ sp-finality-grandpa = { version = "3.0.0" }
 sc-client-api = { version = "3.0.0" }
 sp-runtime = { version = "3.0.0" }
 
-# These dependencies are used for the node template's RPCs
+# These dependencies are used for the node RPCs
 jsonrpc-core = "15.1.0"
 sc-rpc = { version = "3.0.0" }
 sp-api = { version = "3.0.0" }
