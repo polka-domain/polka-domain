@@ -17,6 +17,14 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use codec::{Encode, Decode};
+use frame_support::{
+	dispatch::PostDispatchInfo,
+	weights::GetDispatchInfo,
+};
+use sp_runtime::{traits::Dispatchable, RuntimeDebug};
+use sp_std::prelude::*;
+
 pub use pallet::*;
 
 #[cfg(test)]
@@ -28,25 +36,18 @@ mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
+#[derive(Clone, Eq, PartialEq, Encode, Decode, Default, RuntimeDebug)]
+pub struct DomainAddress<AccountId> {
+	native: AccountId,
+	relay: Option<AccountId>,
+	ethereum: Vec<u8>,
+}
+
 #[frame_support::pallet]
 pub mod pallet {
-	use codec::{Encode, Decode};
-	use frame_support::{
-		dispatch::{PostDispatchInfo, DispatchResultWithPostInfo},
-		pallet_prelude::*,
-		weights::GetDispatchInfo,
-		RuntimeDebug,
-	};
+	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
-	use sp_std::prelude::*;
-	use sp_runtime::traits::Dispatchable;
-
-	#[derive(Clone, Eq, PartialEq, Encode, Decode, Default, RuntimeDebug)]
-	pub struct DomainAddress<AccountId> {
-		native: AccountId,
-		relay: Option<AccountId>,
-		ethereum: Vec<u8>,
-	}
+	use super::*;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
