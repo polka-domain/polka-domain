@@ -46,6 +46,7 @@ domain = { package = "pallet-domain", path = "../../pallets/domain", default-fea
 cumulus-pallet-parachain-system = { default-features = false }
 cumulus-pallet-xcm-handler = { default-features = false }
 cumulus-primitives-core = { default-features = false }
+cumulus-spambot = { default-features = false }
 parachain-info = { default-features = false }
 
 # Polkadot dependencies
@@ -97,6 +98,7 @@ std = [
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-pallet-xcm-handler/std",
 	"cumulus-primitives-core/std",
+	"cumulus-spambot/std",
 	"parachain-info/std",
 
 	"xcm/std",

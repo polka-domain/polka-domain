@@ -182,6 +182,7 @@ impl frame_system::Config for Runtime {
 	type SystemWeightInfo = ();
 	/// This is used as an identifier of the chain. 42 is the generic substrate prefix.
 	type SS58Prefix = SS58Prefix;
+	type OnSetCode = ParachainSystem;
 }
 
 parameter_types! {
@@ -260,7 +261,7 @@ mod parachain_impl {
 		type OnValidationData = ();
 		type SelfParaId = parachain_info::Pallet<Runtime>;
 		type DownwardMessageHandlers = XcmHandler;
-		type HrmpMessageHandlers = XcmHandler;
+		type XcmpMessageHandlers = XcmHandler;
 	}
 
 	impl parachain_info::Config for Runtime {}
@@ -312,10 +313,12 @@ mod parachain_impl {
 			let mut t = BTreeSet::new();
 			//TODO: might need to add other assets based on orml-tokens
 
-			// Plasm
-			t.insert(("SDN".into(), (Junction::Parent, Junction::Parachain { id: 5000 }).into()));
-			// Plasm
-			t.insert(("PLM".into(), (Junction::Parent, Junction::Parachain { id: 5000 }).into()));
+			t.insert(("BNC".into(), (Junction::Parent, Junction::Parachain { id: 107 }).into()));
+			t.insert(("AUSD".into(), (Junction::Parent, Junction::Parachain { id: 107 }).into()));
+			t.insert(("DOT".into(), (Junction::Parent, Junction::Parachain { id: 107 }).into()));
+			t.insert(("ETH".into(), (Junction::Parent, Junction::Parachain { id: 107 }).into()));
+
+			t.insert(("ACA".into(), (Junction::Parent, Junction::Parachain { id: 666 }).into()));
 
 			t.insert(("AUSD".into(), (Junction::Parent, Junction::Parachain { id: 2020 }).into()));
 			t.insert(("DOT".into(), (Junction::Parent, Junction::Parachain { id: 2020 }).into()));
@@ -345,7 +348,7 @@ mod parachain_impl {
 		type Event = Event;
 		type XcmExecutor = XcmExecutor<XcmConfig>;
 		type UpwardMessageSender = ParachainSystem;
-		type HrmpMessageSender = ParachainSystem;
+		type XcmpMessageSender = ParachainSystem;
 		type SendXcmOrigin = EnsureRoot<AccountId>;
 		type AccountIdConverter = LocationConverter;
 	}
@@ -366,6 +369,13 @@ mod parachain_impl {
 		type RelayChainNetworkId = PolkadotNetworkId;
 		type ParaId = ParachainInfo;
 		type XcmHandler = HandleXcm;
+	}
+
+	impl cumulus_spambot::Config for Runtime {
+		type Event = Event;
+		type Origin = Origin;
+		type Call = Call;
+		type XcmSender = XcmHandler;
 	}
 }
 
@@ -420,6 +430,7 @@ construct_runtime!(
 		ParachainInfo: parachain_info::{Pallet, Storage, Config},
 		XcmHandler: cumulus_pallet_xcm_handler::{Pallet, Call, Event<T>, Origin},
 		XTokens: orml_xtokens::{Pallet, Storage, Call, Event<T>},
+		Spambot: cumulus_spambot::{Pallet, Call, Storage, Event<T>},
 
 		// ORML
 		Currencies: orml_currencies::{Pallet, Call, Event<T>},
