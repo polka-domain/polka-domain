@@ -3,6 +3,7 @@ members = [
 	"node/parachain",
 	"node/standalone",
 	"pallets/domain",
+	"pallets/fixed-swap",
 	"primitives",
 	"runtime/parachain",
 	"runtime/standalone",
