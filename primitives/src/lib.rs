@@ -20,6 +20,7 @@
 #![allow(clippy::upper_case_acronyms)]
 
 pub mod currency;
+pub mod nft;
 
 use sp_runtime::{
 	generic,
@@ -28,6 +29,9 @@ use sp_runtime::{
 };
 
 pub use currency::{CurrencyId, TokenSymbol};
+pub use nft::NFT;
+
+pub type NFTBalance = u128;
 
 /// An index to a block.
 pub type BlockNumber = u32;
