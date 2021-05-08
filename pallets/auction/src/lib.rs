@@ -145,6 +145,7 @@ pub mod pallet {
 		InvalidCreator,
 		InvalidDuration,
 		InvalidBidAmount,
+		ExceedMaxAuction,
 	}
 
 	#[pallet::call]
@@ -164,6 +165,10 @@ pub mod pallet {
 			let auction_id = NextAuctionId::<T>::get().unwrap();
 			let start_at = frame_system::Pallet::<T>::block_number();
 			let end_at = start_at.saturating_add(duration);
+			ensure!(
+				AuctionEndAt::<T>::iter_prefix(end_at).count() <= T::MaxAuction::get() as usize,
+				Error::<T>::ExceedMaxAuction
+			);
 
 			T::NFT::reserve(&creator, token0)?;
 
