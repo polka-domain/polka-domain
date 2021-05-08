@@ -1,0 +1,38 @@
+[package]
+name = 'pallet-auction'
+version = "0.1.0"
+license = "Apache-2.0"
+authors = ["Alkaid <alkaidwe@gmail.com>"]
+edition = '2018'
+
+[dependencies]
+codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"] }
+log = { version = "0.4.14", default-features = false }
+frame-support = { version = "3.0.0", default-features = false }
+frame-system = { version = "3.0.0", default-features = false }
+frame-benchmarking = { version = "3.0.0", default-features = false, optional = true }
+primitives = { package = "polka-domain-primitives", path = "../../primitives", default-features = false }
+sp-runtime = { version = "3.0.0", default-features = false }
+sp-std = { version = "3.0.0", default-features = false }
+
+orml-tokens = { default-features = false }
+orml-traits = { default-features = false }
+
+[dev-dependencies]
+orml-currencies = { default-features = false }
+pallet-balances = { version = "3.0.0", default-features = false }
+sp-io = { version = "3.0.0", default-features = false }
+sp-runtime = { version = "3.0.0", default-features = false }
+
+[features]
+default = ['std']
+std = [
+	'codec/std',
+	'frame-support/std',
+	'frame-system/std',
+	'primitives/std',
+	"orml-tokens/std",
+	"orml-traits/std",
+	"sp-std/std",
+	"sp-runtime/std",
+]
