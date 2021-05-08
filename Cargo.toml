@@ -2,6 +2,7 @@
 members = [
 	"node/parachain",
 	"node/standalone",
+	"pallets/auction",
 	"pallets/domain",
 	"pallets/fixed-swap",
 	"pallets/nft",
