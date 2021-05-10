@@ -6,6 +6,7 @@ members = [
 	"pallets/domain",
 	"pallets/fixed-swap",
 	"pallets/nft",
+	"pallets/order",
 	"primitives",
 	"runtime/parachain",
 	"runtime/standalone",
