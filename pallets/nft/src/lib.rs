@@ -53,6 +53,15 @@ pub use weights::WeightInfo;
 use primitives::PalletId;
 use primitives::NFT;
 
+#[cfg(test)]
+mod mock;
+
+#[cfg(test)]
+mod tests;
+
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+
 pub type CID = Vec<u8>;
 
 #[repr(u8)]
