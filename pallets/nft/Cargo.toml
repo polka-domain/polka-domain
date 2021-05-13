@@ -19,6 +19,8 @@ primitives = { package = "polka-domain-primitives", path = "../../primitives", d
 sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
 sp-std = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
 
+orml-currencies = { default-features = false }
+orml-tokens = { default-features = false }
 orml-nft = { default-features = false }
 orml-traits = { default-features = false }
 
@@ -41,6 +43,7 @@ std = [
 	"pallet-proxy/std",
 	"primitives/std",
 	"orml-traits/std",
+	"orml-tokens/std",
 	"orml-nft/std",
 	"enumflags2/serde",
 ]
