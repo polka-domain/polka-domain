@@ -18,6 +18,8 @@ jobs:
     - uses: actions/checkout@v2
     - name: Run scripts
       run: ./scripts/init.sh
+    - name: Cargo Update
+      run: cargo update -p environmental
     - name: Build
       run: cargo build --verbose
     - name: Run tests
