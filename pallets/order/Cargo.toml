@@ -18,6 +18,7 @@ nft = { package = "pallet-nft", path = "../nft", default-features = false }
 sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
 sp-std = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
 pallet-balances = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
+pallet-utility = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
 
 orml-currencies = { default-features = false }
 orml-tokens = { default-features = false }
@@ -25,11 +26,9 @@ orml-traits = { default-features = false }
 orml-nft = { default-features = false }
 
 [dev-dependencies]
-pallet-balances = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
 sp-io = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
 sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
-pallet-utility = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
 
 [features]
 default = ['std']
@@ -41,7 +40,7 @@ std = [
 	'pallet-proxy/std',
 	'pallet-balances/std',
 	'primitives/std',
-    'nft/std',
+	'nft/std',
 	"orml-tokens/std",
 	"orml-traits/std",
 	"orml-nft/std",
