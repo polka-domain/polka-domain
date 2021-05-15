@@ -141,6 +141,18 @@ pub mod module {
 		type WeightInfo: WeightInfo;
 	}
 
+    pub type GenesisTokenData<T> = (
+		<T as frame_system::Config>::AccountId, // Token owner
+		Vec<u8>,                                // Token metadata
+		TokenData<BalanceOf<T>>,
+	);
+	pub type GenesisTokens<T> = (
+		<T as frame_system::Config>::AccountId, // Token class owner
+		Vec<u8>,                                // Token class metadata
+		ClassData<BalanceOf<T>>,
+		Vec<GenesisTokenData<T>>, // Vector of tokens belonging to this class
+	);
+
 	#[pallet::error]
 	pub enum Error<T> {
 		/// ClassId not found
@@ -175,6 +187,73 @@ pub mod module {
 		BurnedTokenWithRemark(T::AccountId, ClassIdOf<T>, TokenIdOf<T>, T::Hash),
 		/// Destroyed NFT class. \[owner, class_id\]
 		DestroyedClass(T::AccountId, ClassIdOf<T>),
+	}
+
+    #[pallet::genesis_config]
+	pub struct GenesisConfig<T: Config> {
+		pub tokens: Vec<GenesisTokens<T>>,
+	}
+
+	#[cfg(feature = "std")]
+	impl<T: Config> Default for GenesisConfig<T> {
+		fn default() -> Self {
+			GenesisConfig { tokens: vec![] }
+		}
+	}
+
+	#[pallet::genesis_build]
+	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+		fn build(&self) {
+			self.tokens.iter().for_each(|token_class| {
+                
+                let who = &token_class.0;
+                let next_id = orml_nft::Pallet::<T>::next_class_id();
+                let owner: T::AccountId = T::PalletId::get().into_sub_account(next_id);
+                let class_deposit = T::CreateClassDeposit::get();
+
+                let proxy_deposit = <pallet_proxy::Pallet<T>>::deposit(1u32);
+                let total_deposit = proxy_deposit.saturating_add(class_deposit);
+
+                // ensure enough token for proxy deposit + class deposit
+                T::Currency::transfer(&who, &owner, total_deposit, KeepAlive).expect("Create class: transfer cannot fail while building genesis");
+
+                T::Currency::reserve(&owner, class_deposit).expect("Create class: reserve  cannot fail while building genesis");
+
+                // owner add proxy delegate to origin
+                <pallet_proxy::Pallet<T>>::add_proxy_delegate(&owner, who.clone(), Default::default(), Zero::zero()).expect("Create class: add_proxy_delegate  cannot fail while building genesis");
+
+                let properties = Properties::default();
+                let data = ClassData {
+                    deposit: class_deposit,
+                    properties,
+                };
+
+				let class_id = orml_nft::Pallet::<T>::create_class(&owner, token_class.1.to_vec(), data)
+					.expect("Create class:  create_class cannot fail while building genesis");
+
+				for (account_id, token_metadata, token_data) in &token_class.3 {
+
+                    let who = &account_id;
+                    let to = &account_id;
+                    let class_info = orml_nft::Pallet::<T>::classes(class_id).ok_or(Error::<T>::ClassIdNotFound).expect("Token mint: get class info cannot fail while building genesis");
+                    if *account_id != class_info.owner {
+                        let e: Result<i8, &str> = Err("Error::<T>::NoPermission");
+                        e.expect("Token mint: Permission cannot fail while building genesis");
+
+                    }
+                    let deposit = T::CreateTokenDeposit::get();
+                    let total_deposit = deposit.saturating_mul(1u32.into());
+
+                    T::Currency::transfer(&who, &to, total_deposit, KeepAlive).expect("Token mint: transfer cannot fail while building genesis");
+                    T::Currency::reserve(&to, total_deposit).expect("Token mint: reserve  cannot fail while building genesis");
+
+                    let data = TokenData { deposit };
+
+					orml_nft::Pallet::<T>::mint(&to, class_id, token_metadata.to_vec(), token_data.clone())
+						.expect("Token mint cannot fail during genesis");
+				}
+			})
+		}
 	}
 
 	#[pallet::pallet]
