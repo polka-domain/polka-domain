@@ -29,12 +29,6 @@ use primitives::NFT;
 
 pub use pallet::*;
 
-#[cfg(test)]
-mod mock;
-
-#[cfg(test)]
-mod tests;
-
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default)]
 pub struct AuctionDetails<AccountId, Balance, BlockNumber, ClassId, TokenId> {
 	creator: AccountId,
