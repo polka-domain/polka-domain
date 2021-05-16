@@ -79,11 +79,13 @@ impl pallet_balances::Config for Runtime {
 	type MaxLocks = ();
 	type WeightInfo = ();
 }
+
 impl pallet_utility::Config for Runtime {
 	type Event = Event;
 	type Call = Call;
 	type WeightInfo = ();
 }
+
 parameter_types! {
 	pub const ProxyDepositBase: u64 = 1;
 	pub const ProxyDepositFactor: u64 = 1;

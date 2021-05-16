@@ -12,13 +12,13 @@ log = { version = "0.4.14", default-features = false }
 frame-support = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
 frame-system = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
 pallet-proxy = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
+pallet-utility = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
 frame-benchmarking = { version = "3.0.0", default-features = false, optional = true }
 primitives = { package = "polka-domain-primitives", path = "../../primitives", default-features = false }
 nft = { package = "pallet-nft", path = "../nft", default-features = false }
 sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
 sp-std = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
 pallet-balances = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
-pallet-utility = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
 
 orml-currencies = { default-features = false }
 orml-tokens = { default-features = false }
@@ -39,6 +39,7 @@ std = [
 	'frame-system/std',
 	'pallet-proxy/std',
 	'pallet-balances/std',
+	"pallet-utility/std",
 	'primitives/std',
 	'nft/std',
 	"orml-tokens/std",
