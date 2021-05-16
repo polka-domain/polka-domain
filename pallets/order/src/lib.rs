@@ -26,6 +26,7 @@ use orml_traits::{
 	MultiReservableCurrency,
 };
 use primitives::NFT;
+use primitives::CurrencyId;
 
 pub use pallet::*;
 
@@ -40,7 +41,7 @@ pub struct PoolDetails<AccountId, Balance, ClassId, TokenId> {
 	maker: AccountId,
 	taker: Option<AccountId>,
 	token0: (ClassId, TokenId),
-	token1: TokenId,
+	token1: CurrencyId,
 	total1: Balance,
 }
 
@@ -62,7 +63,7 @@ pub mod pallet {
 		type OrderId: Member + Parameter + AtLeast32BitUnsigned + Default + Copy;
 
 		/// The currency mechanism.
-		type Currency: MultiCurrency<Self::AccountId, CurrencyId = Self::TokenId, Balance = Self::Balance>
+		type Currency: MultiCurrency<Self::AccountId, CurrencyId = CurrencyId, Balance = Self::Balance>
 			+ MultiReservableCurrency<Self::AccountId>;
 
 		/// The class ID type
@@ -120,7 +121,7 @@ pub mod pallet {
 		pub(super) fn make_order(
 			origin: OriginFor<T>,
 			token0: (T::ClassId, T::TokenId),
-			token1: T::TokenId,
+			token1: CurrencyId,
 			total1: T::Balance,
 		) -> DispatchResultWithPostInfo {
 			let maker = ensure_signed(origin)?;

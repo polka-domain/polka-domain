@@ -149,6 +149,10 @@ pub enum CurrencyId {
 	DEXShare(TokenSymbol, TokenSymbol),
 }
 
+impl Default for CurrencyId {
+    fn default() -> Self { CurrencyId::Token(TokenSymbol::ACA) }
+}
+
 impl CurrencyId {
 	pub fn is_token_currency_id(&self) -> bool {
 		matches!(self, CurrencyId::Token(_))
