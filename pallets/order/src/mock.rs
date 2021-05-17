@@ -35,6 +35,9 @@ use sp_runtime::{
 };
 use primitives::PalletId;
 use frame_support::traits::GenesisBuild;
+use sp_runtime::{
+	traits::{AccountIdConversion},
+};
 
 parameter_types! {
 	pub const BlockHashCount: u64 = 250;
@@ -253,7 +256,11 @@ impl ExtBuilder {
 			.unwrap();
 
 		pallet_balances::GenesisConfig::<Runtime> {
-			balances: vec![(ALICE, 100000)],
+			balances: vec![
+                (ALICE, 1000000000000), 
+                (BOB, 1000000000000),
+                (<Runtime as nft::Config>::PalletId::get().into_sub_account(CLASS_ID), 1000000000000)
+                ],
 		}
 		.assimilate_storage(&mut t)
 		.unwrap();

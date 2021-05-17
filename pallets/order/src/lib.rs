@@ -125,7 +125,7 @@ pub mod pallet {
 			total1: T::Balance,
 		) -> DispatchResultWithPostInfo {
 			let maker = ensure_signed(origin)?;
-			let order_id = NextOrderId::<T>::get().unwrap();
+			let order_id = NextOrderId::<T>::get().unwrap_or_default();
 
 			T::NFT::reserve(&maker, token0)?;
 
