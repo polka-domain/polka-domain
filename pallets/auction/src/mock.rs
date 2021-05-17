@@ -19,7 +19,7 @@
 
 use super::*;
 
-use crate as pallet_order;
+use crate as pallet_auction;
 use codec::{Decode, Encode};
 use frame_support::{
 	construct_runtime, parameter_types,
@@ -44,6 +44,7 @@ parameter_types! {
 }
 
 pub type AccountId = AccountId32;
+pub type AuctionId = u32;
 
 impl frame_system::Config for Runtime {
 	type BaseCallFilter = BaseFilter;
@@ -199,9 +200,12 @@ impl orml_nft::Config for Runtime {
 	type TokenData = nft::TokenData<Balance>;
 }
 
-impl pallet_order::Config for Runtime {
+parameter_types! {
+	pub const MaxAuction: u32 = 10_000;
+}
+impl pallet_auction::Config for Runtime {
     type Event = Event;
-    type OrderId = u32;
+    type AuctionId = AuctionId;
     type Balance = Balance;
     type ClassId = u32;
     type TokenId = u64;
@@ -209,6 +213,7 @@ impl pallet_order::Config for Runtime {
     type TokenData = ();
     type Currency = Currency;
     type NFT = NFTPallet;
+    type MaxAuction = MaxAuction;
 }
 
 use frame_system::Call as SystemCall;
@@ -223,7 +228,7 @@ construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		OrderModule: pallet_order::{Pallet, Call, Event<T>},
+		AuctionModule: pallet_auction::{Pallet, Call, Event<T>},
 		OrmlNFT: orml_nft::{Pallet, Storage, Config<T>},
         NFTPallet: nft::{Pallet, Storage, Config<T>, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
