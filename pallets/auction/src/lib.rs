@@ -26,6 +26,7 @@ use orml_traits::{
 	MultiReservableCurrency,
 };
 use primitives::NFT;
+use primitives::CurrencyId;
 
 pub use pallet::*;
 
@@ -40,7 +41,7 @@ pub struct AuctionDetails<AccountId, Balance, BlockNumber, ClassId, TokenId> {
 	creator: AccountId,
 	winner: Option<AccountId>,
 	token0: (ClassId, TokenId),
-	token1: TokenId,
+	token1: CurrencyId,
 	min1: Balance,
 	duration: BlockNumber,
 	start_at: BlockNumber,
@@ -66,7 +67,7 @@ pub mod pallet {
 		type AuctionId: Member + Parameter + AtLeast32BitUnsigned + Default + Copy;
 
 		/// The currency mechanism.
-		type Currency: MultiCurrency<Self::AccountId, CurrencyId = Self::TokenId, Balance = Self::Balance>
+		type Currency: MultiCurrency<Self::AccountId, CurrencyId = CurrencyId, Balance = Self::Balance>
 			+ MultiReservableCurrency<Self::AccountId>;
 
 		/// The class ID type
@@ -155,7 +156,7 @@ pub mod pallet {
 		pub(super) fn create_auction(
 			origin: OriginFor<T>,
 			token0: (T::ClassId, T::TokenId),
-			token1: T::TokenId,
+			token1: CurrencyId,
 			min1: T::Balance,
 			duration: T::BlockNumber,
 		) -> DispatchResult {
@@ -170,7 +171,7 @@ pub mod pallet {
 				Error::<T>::ExceedMaxAuction
 			);
 
-			T::NFT::reserve(&creator, token0)?;
+			//T::NFT::reserve(&creator, token0)?;
 
 			Auction::<T>::insert(auction_id, AuctionDetails {
 				creator: creator.clone(),
@@ -227,7 +228,7 @@ pub mod pallet {
 			let now = frame_system::Pallet::<T>::block_number();
 			ensure!(auction.start_at < now, Error::<T>::AuctionStarted);
 
-			T::NFT::unreserve(&auction.creator, auction.token0);
+			//T::NFT::unreserve(&auction.creator, auction.token0);
 			Auction::<T>::remove(auction_id);
 
 			Self::deposit_event(Event::AuctionCancelled(auction_id));
@@ -247,7 +248,7 @@ pub mod pallet {
 		fn on_finalize(now: T::BlockNumber) {
 			for (auction_id, _) in AuctionEndAt::<T>::drain_prefix(&now) {
 				Auction::<T>::try_mutate(auction_id, |auction| -> DispatchResult {
-					T::NFT::unreserve(&auction.creator, auction.token0);
+					//T::NFT::unreserve(&auction.creator, auction.token0);
 
 					if AuctionWinner::<T>::contains_key(auction_id) {
 						let (winner, winner_amount1) = AuctionWinner::<T>::get(auction_id);
