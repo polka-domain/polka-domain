@@ -396,7 +396,7 @@ impl orml_tokens::Config for Runtime {
 }
 
 parameter_types! {
-	pub const GetPolkaDomainTokenId: CurrencyId = CurrencyId::Token(TokenSymbol::ACA);
+	pub const GetPolkaDomainTokenId: CurrencyId = CurrencyId::Token(TokenSymbol::NAME);
 }
 
 pub type PolkaDomainToken = orml_currencies::BasicCurrencyAdapter<Runtime, Balances, Amount, BlockNumber>;

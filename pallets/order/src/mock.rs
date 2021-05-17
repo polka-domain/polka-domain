@@ -34,6 +34,7 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
 };
 use primitives::PalletId;
+use frame_support::traits::GenesisBuild;
 
 parameter_types! {
 	pub const BlockHashCount: u64 = 250;
@@ -161,7 +162,7 @@ impl orml_tokens::Config for Runtime {
 	type OnDust = ();
 }
 
-pub const NATIVE_CURRENCY_ID: CurrencyId = CurrencyId::Token(TokenSymbol::ACA);
+pub const NATIVE_CURRENCY_ID: CurrencyId = CurrencyId::Token(TokenSymbol::NAME);
 
 parameter_types! {
 	pub const GetNativeCurrencyId: CurrencyId = NATIVE_CURRENCY_ID;
@@ -256,6 +257,12 @@ impl ExtBuilder {
 		}
 		.assimilate_storage(&mut t)
 		.unwrap();
+        
+        orml_tokens::GenesisConfig::<Runtime> {
+            endowed_accounts: vec![(ALICE, CurrencyId::Token(TokenSymbol::NAME), 200000)],
+        }
+        .assimilate_storage(&mut t)
+        .unwrap();
 
 		let mut ext = sp_io::TestExternalities::new(t);
 		ext.execute_with(|| System::set_block_number(1));

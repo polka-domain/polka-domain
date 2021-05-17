@@ -17,10 +17,16 @@
 
 use super::*;
 pub use crate::mock::{
-    Event, OrderModule, ExtBuilder, Origin, System, Tokens, ALICE, BOB,
+    Event, OrderModule, ExtBuilder, NFTPallet, Proxy, Origin, System, Tokens, ALICE, BOB,
+    CLASS_ID, CLASS_ID_NOT_EXIST, TOKEN_ID, TOKEN_ID_NOT_EXIST
 };
 use crate::{mock::*, Error};
 use frame_support::{assert_noop, assert_ok};
+use primitives::{Balance, TokenSymbol};
+use nft::{Properties, ClassProperty};
+use sp_runtime::{
+	traits::{AccountIdConversion},
+};
 
 fn new_test_ext() -> sp_io::TestExternalities {
     let mut ext = ExtBuilder::default().build();
@@ -37,38 +43,56 @@ fn events() -> Vec<Event> {
     evt
 }
 
+fn free_balance(who: &AccountId) -> Balance {
+	<Runtime as pallet_proxy::Config>::Currency::free_balance(who)
+}
+
+fn reserved_balance(who: &AccountId) -> Balance {
+	<Runtime as pallet_proxy::Config>::Currency::reserved_balance(who)
+}
+
+fn class_id_account() -> AccountId {
+	<Runtime as nft::Config>::PalletId::get().into_sub_account(CLASS_ID)
+}
+
 #[test]
 fn test_make_order_should_work() {
     new_test_ext().execute_with(|| {
 
-    });
-}
-fn test_make_order_should_fail() {
-    new_test_ext().execute_with(|| {
+        assert_ok!(NFTPallet::create_class(
+			Origin::signed(ALICE),
+			vec![1],
+			Properties(ClassProperty::Transferable | ClassProperty::Burnable)
+		));
+
+        assert_ok!(NFTPallet::mint(
+			Origin::signed(class_id_account()),
+			BOB,
+			CLASS_ID,
+			vec![2],
+			2
+		));
+
+        assert_ok!(OrderModule::make_order(
+            Origin::signed(BOB),
+			(CLASS_ID, TOKEN_ID),
+            CurrencyId::Token(TokenSymbol::NAME),
+            1
+        ));
 
     });
 }
 
-#[test]
-fn test_take_order_should_work() {
-    new_test_ext().execute_with(|| {
+// #[test]
+// fn test_take_order_should_work() {
+//     new_test_ext().execute_with(|| {
        
-    });
-}
-fn test_take_order_should_fail() {
-    new_test_ext().execute_with(|| {
-       
-    });
-}
+//     });
+// }
 
-#[test]
-fn test_cancel_order_should_work() {
-    new_test_ext().execute_with(|| {
+// #[test]
+// fn test_cancel_order_should_work() {
+//     new_test_ext().execute_with(|| {
         
-    });
-}
-fn test_cancel_order_should_fail() {
-    new_test_ext().execute_with(|| {
-        
-    });
-}
+//     });
+// }
