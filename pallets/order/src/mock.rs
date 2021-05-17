@@ -44,7 +44,6 @@ parameter_types! {
 }
 
 pub type AccountId = AccountId32;
-pub type U64CurrencyId = u64;
 
 impl frame_system::Config for Runtime {
 	type BaseCallFilter = BaseFilter;
@@ -238,9 +237,7 @@ construct_runtime!(
 pub const ALICE: AccountId = AccountId::new([1u8; 32]);
 pub const BOB: AccountId = AccountId::new([2u8; 32]);
 pub const CLASS_ID: <Runtime as orml_nft::Config>::ClassId = 0;
-pub const CLASS_ID_NOT_EXIST: <Runtime as orml_nft::Config>::ClassId = 1;
 pub const TOKEN_ID: <Runtime as orml_nft::Config>::TokenId = 0;
-pub const TOKEN_ID_NOT_EXIST: <Runtime as orml_nft::Config>::TokenId = 1;
 
 pub struct ExtBuilder;
 impl Default for ExtBuilder {
@@ -266,7 +263,10 @@ impl ExtBuilder {
 		.unwrap();
         
         orml_tokens::GenesisConfig::<Runtime> {
-            endowed_accounts: vec![(ALICE, CurrencyId::Token(TokenSymbol::NAME), 200000)],
+            endowed_accounts: vec![
+                (ALICE, CurrencyId::Token(TokenSymbol::NAME), 200000),
+                (BOB, CurrencyId::Token(TokenSymbol::NAME), 200000)
+                ],
         }
         .assimilate_storage(&mut t)
         .unwrap();

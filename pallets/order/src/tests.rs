@@ -18,7 +18,7 @@
 use super::*;
 pub use crate::mock::{
     Event, OrderModule, ExtBuilder, NFTPallet, Proxy, Origin, System, Tokens, ALICE, BOB,
-    CLASS_ID, CLASS_ID_NOT_EXIST, TOKEN_ID, TOKEN_ID_NOT_EXIST
+    CLASS_ID, TOKEN_ID
 };
 use crate::{mock::*, Error};
 use frame_support::{assert_noop, assert_ok};
@@ -111,6 +111,9 @@ fn test_take_order_should_work() {
         let event = Event::pallet_order(crate::Event::OrderCreated(0, ALICE));
 		assert_eq!(last_event(), event);
 
+        let before_alice_balance = free_balance(&ALICE);
+        let before_bob_balance = free_balance(&BOB);
+
         assert_ok!(OrderModule::take_order(
             Origin::signed(BOB),
 			0,
@@ -118,6 +121,9 @@ fn test_take_order_should_work() {
         ));
         let event = Event::pallet_order(crate::Event::OrderSwapped(0, BOB));
 		assert_eq!(last_event(), event);
+
+        assert_eq!(free_balance(&ALICE), before_alice_balance + 1);
+        assert_eq!(free_balance(&BOB), before_bob_balance - 1);
     });
 }
 
