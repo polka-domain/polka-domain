@@ -42,8 +42,4 @@ pub trait NFT<AccountId> {
 
     /// Transfer the given token ID from one account to another.
     fn transfer(from: &AccountId, to: &AccountId, token: (Self::ClassId, Self::TokenId)) -> DispatchResult;
-
-    fn reserve(owner: &AccountId, token: (Self::ClassId, Self::TokenId)) -> DispatchResult;
-
-    fn unreserve(owner: &AccountId, token: (Self::ClassId, Self::TokenId)) -> Self::Balance;
 }

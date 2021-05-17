@@ -34,15 +34,6 @@ fn new_test_ext() -> sp_io::TestExternalities {
     ext
 }
 
-fn events() -> Vec<Event> {
-    let evt = System::events()
-        .into_iter()
-        .map(|evt| evt.event)
-        .collect::<Vec<_>>();
-    System::reset_events();
-    evt
-}
-
 fn free_balance(who: &AccountId) -> Balance {
 	<Runtime as pallet_proxy::Config>::Currency::free_balance(who)
 }
@@ -65,34 +56,114 @@ fn test_make_order_should_work() {
 			Properties(ClassProperty::Transferable | ClassProperty::Burnable)
 		));
 
+        let event = Event::nft(nft::Event::CreatedClass(class_id_account(), CLASS_ID));
+		assert_eq!(last_event(), event);
+
         assert_ok!(NFTPallet::mint(
 			Origin::signed(class_id_account()),
-			BOB,
+			ALICE,
 			CLASS_ID,
 			vec![2],
 			2
 		));
+        let event = Event::nft(nft::Event::MintedToken(class_id_account(), ALICE, CLASS_ID, 2));
+		assert_eq!(last_event(), event);
 
         assert_ok!(OrderModule::make_order(
-            Origin::signed(BOB),
+            Origin::signed(ALICE),
 			(CLASS_ID, TOKEN_ID),
             CurrencyId::Token(TokenSymbol::NAME),
             1
         ));
+        let event = Event::pallet_order(crate::Event::OrderCreated(0, ALICE));
+		assert_eq!(last_event(), event);
 
     });
 }
 
-// #[test]
-// fn test_take_order_should_work() {
-//     new_test_ext().execute_with(|| {
-       
-//     });
-// }
+#[test]
+fn test_take_order_should_work() {
+    new_test_ext().execute_with(|| {
+        assert_ok!(NFTPallet::create_class(
+			Origin::signed(ALICE),
+			vec![1],
+			Properties(ClassProperty::Transferable | ClassProperty::Burnable)
+		));
+        let event = Event::nft(nft::Event::CreatedClass(class_id_account(), CLASS_ID));
+		assert_eq!(last_event(), event);
 
-// #[test]
-// fn test_cancel_order_should_work() {
-//     new_test_ext().execute_with(|| {
-        
-//     });
-// }
+        assert_ok!(NFTPallet::mint(
+			Origin::signed(class_id_account()),
+			ALICE,
+			CLASS_ID,
+			vec![2],
+			2
+		));
+        let event = Event::nft(nft::Event::MintedToken(class_id_account(), ALICE, CLASS_ID, 2));
+		assert_eq!(last_event(), event);
+
+        assert_ok!(OrderModule::make_order(
+            Origin::signed(ALICE),
+			(CLASS_ID, TOKEN_ID),
+            CurrencyId::Token(TokenSymbol::NAME),
+            1
+        ));
+        let event = Event::pallet_order(crate::Event::OrderCreated(0, ALICE));
+		assert_eq!(last_event(), event);
+
+        assert_ok!(OrderModule::take_order(
+            Origin::signed(BOB),
+			0,
+            1
+        ));
+        let event = Event::pallet_order(crate::Event::OrderSwapped(0, BOB));
+		assert_eq!(last_event(), event);
+    });
+}
+
+#[test]
+fn test_cancel_order_should_work() {
+    new_test_ext().execute_with(|| {
+        assert_ok!(NFTPallet::create_class(
+			Origin::signed(ALICE),
+			vec![1],
+			Properties(ClassProperty::Transferable | ClassProperty::Burnable)
+		));
+        let event = Event::nft(nft::Event::CreatedClass(class_id_account(), CLASS_ID));
+		assert_eq!(last_event(), event);
+
+        assert_ok!(NFTPallet::mint(
+			Origin::signed(class_id_account()),
+			ALICE,
+			CLASS_ID,
+			vec![2],
+			2
+		));
+        let event = Event::nft(nft::Event::MintedToken(class_id_account(), ALICE, CLASS_ID, 2));
+		assert_eq!(last_event(), event);
+
+        assert_ok!(OrderModule::make_order(
+            Origin::signed(ALICE),
+			(CLASS_ID, TOKEN_ID),
+            CurrencyId::Token(TokenSymbol::NAME),
+            1
+        ));
+        let event = Event::pallet_order(crate::Event::OrderCreated(0, ALICE));
+		assert_eq!(last_event(), event);
+
+        assert_noop!(
+            OrderModule::cancel_order(
+                Origin::signed(BOB), 
+                0
+            ),
+            Error::<Runtime>::InvalidCreator
+        );
+
+        assert_ok!(OrderModule::cancel_order(
+            Origin::signed(ALICE), 
+            0
+        ));
+        let event = Event::pallet_order(crate::Event::OrderCancelled(0));
+		assert_eq!(last_event(), event);
+    });
+}
