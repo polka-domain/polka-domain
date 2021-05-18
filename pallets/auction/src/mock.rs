@@ -19,7 +19,7 @@
 
 use super::*;
 
-use crate as nft;
+use crate as pallet_auction;
 use codec::{Decode, Encode};
 use frame_support::{
 	construct_runtime, parameter_types,
@@ -33,13 +33,18 @@ use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
 };
+use primitives::PalletId;
+use frame_support::traits::GenesisBuild;
+use sp_runtime::{
+	traits::{AccountIdConversion},
+};
 
 parameter_types! {
 	pub const BlockHashCount: u64 = 250;
 }
 
 pub type AccountId = AccountId32;
-
+pub type AuctionId = u32;
 
 impl frame_system::Config for Runtime {
 	type BaseCallFilter = BaseFilter;
@@ -78,11 +83,13 @@ impl pallet_balances::Config for Runtime {
 	type MaxLocks = ();
 	type WeightInfo = ();
 }
+
 impl pallet_utility::Config for Runtime {
 	type Event = Event;
 	type Call = Call;
 	type WeightInfo = ();
 }
+
 parameter_types! {
 	pub const ProxyDepositBase: u64 = 1;
 	pub const ProxyDepositFactor: u64 = 1;
@@ -170,16 +177,15 @@ impl orml_currencies::Config for Runtime {
 	type NativeCurrency = NativeCurrency;
 	type GetNativeCurrencyId = GetNativeCurrencyId;
 	type WeightInfo = ();
-	//type AddressMapping = MockAddressMapping;
-	//type EVMBridge = ();
 }
 
 parameter_types! {
 	pub const CreateClassDeposit: Balance = 200;
 	pub const CreateTokenDeposit: Balance = 100;
-	pub const NftPalletId: PalletId = PalletId(*b"aca/aNFT");
+	pub const NftPalletId: PalletId = PalletId(*b"pol/aNFT");
 }
-impl Config for Runtime {
+
+impl nft::Config for Runtime {
 	type Event = Event;
 	type CreateClassDeposit = CreateClassDeposit;
 	type CreateTokenDeposit = CreateTokenDeposit;
@@ -190,8 +196,24 @@ impl Config for Runtime {
 impl orml_nft::Config for Runtime {
 	type ClassId = u32;
 	type TokenId = u64;
-	type ClassData = ClassData<Balance>;
-	type TokenData = TokenData<Balance>;
+	type ClassData = nft::ClassData<Balance>;
+	type TokenData = nft::TokenData<Balance>;
+}
+
+parameter_types! {
+	pub const MaxAuction: u32 = 10_000;
+}
+impl pallet_auction::Config for Runtime {
+    type Event = Event;
+    type AuctionId = AuctionId;
+    type Balance = Balance;
+    type ClassId = u32;
+    type TokenId = u64;
+    type ClassData = ();
+    type TokenData = ();
+    type Currency = Currency;
+    type NFT = NFTPallet;
+    type MaxAuction = MaxAuction;
 }
 
 use frame_system::Call as SystemCall;
@@ -206,8 +228,9 @@ construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		NFTModule: nft::{Pallet, Call, Event<T>},
+		AuctionModule: pallet_auction::{Pallet, Call, Event<T>},
 		OrmlNFT: orml_nft::{Pallet, Storage, Config<T>},
+        NFTPallet: nft::{Pallet, Storage, Config<T>, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>},
 		Utility: pallet_utility::{Pallet, Call, Event},
@@ -219,9 +242,7 @@ construct_runtime!(
 pub const ALICE: AccountId = AccountId::new([1u8; 32]);
 pub const BOB: AccountId = AccountId::new([2u8; 32]);
 pub const CLASS_ID: <Runtime as orml_nft::Config>::ClassId = 0;
-pub const CLASS_ID_NOT_EXIST: <Runtime as orml_nft::Config>::ClassId = 1;
 pub const TOKEN_ID: <Runtime as orml_nft::Config>::TokenId = 0;
-pub const TOKEN_ID_NOT_EXIST: <Runtime as orml_nft::Config>::TokenId = 1;
 
 pub struct ExtBuilder;
 impl Default for ExtBuilder {
@@ -237,7 +258,11 @@ impl ExtBuilder {
 			.unwrap();
 
 		pallet_balances::GenesisConfig::<Runtime> {
-			balances: vec![(ALICE, 100000)],
+			balances: vec![
+                (ALICE, 1000000000000), 
+                (BOB, 1000000000000),
+                (<Runtime as nft::Config>::PalletId::get().into_sub_account(CLASS_ID), 1000000000000)
+                ],
 		}
 		.assimilate_storage(&mut t)
 		.unwrap();

@@ -15,6 +15,7 @@ frame-support = { git = "https://github.com/paritytech/substrate", branch = "roc
 frame-system = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
 pallet-proxy = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
 pallet-timestamp = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
+pallet-utility = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
 primitives = { package = "polka-domain-primitives", path = "../../primitives", default-features = false }
 sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
 sp-std = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1", default-features = false }
@@ -28,7 +29,6 @@ orml-traits = { default-features = false }
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1" }
 sp-io = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1" }
 pallet-balances = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1" }
-pallet-utility = { git = "https://github.com/paritytech/substrate", branch = "rococo-v1" }
 
 [features]
 default = ["std"]
@@ -41,6 +41,7 @@ std = [
 	"frame-support/std",
 	"frame-system/std",
 	"pallet-proxy/std",
+	"pallet-utility/std",
 	"primitives/std",
 	"orml-traits/std",
 	"orml-tokens/std",

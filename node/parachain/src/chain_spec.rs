@@ -148,7 +148,7 @@ fn testnet_genesis(
 				.iter()
 				.flat_map(|x| {
 					vec![
-						(x.clone(), CurrencyId::Token(TokenSymbol::ACA), 1 << 60),
+						(x.clone(), CurrencyId::Token(TokenSymbol::NAME), 1 << 60),
 						(x.clone(), CurrencyId::Token(TokenSymbol::AUSD), 1 << 60),
 						(x.clone(), CurrencyId::Token(TokenSymbol::DOT), 1 << 60),
 					]

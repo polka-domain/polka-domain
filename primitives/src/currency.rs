@@ -114,7 +114,7 @@ create_currency_id! {
 	#[repr(u8)]
 	pub enum TokenSymbol {
 		// Polkadot Ecosystem
-		ACA("Acala", 13) = 0,
+		NAME("Name", 13) = 0,
 		AUSD("Acala Dollar", 12) = 1,
 		DOT("Polkadot", 10) = 2,
 		LDOT("Liquid DOT", 10) = 3,
@@ -147,6 +147,10 @@ pub trait GetDecimals {
 pub enum CurrencyId {
 	Token(TokenSymbol),
 	DEXShare(TokenSymbol, TokenSymbol),
+}
+
+impl Default for CurrencyId {
+    fn default() -> Self { CurrencyId::Token(TokenSymbol::NAME) }
 }
 
 impl CurrencyId {
