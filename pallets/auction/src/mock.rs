@@ -201,7 +201,7 @@ impl orml_nft::Config for Runtime {
 }
 
 parameter_types! {
-	pub const MaxAuction: u32 = 10_000;
+	pub const MaxAuction: u32 = 3;
 }
 impl pallet_auction::Config for Runtime {
     type Event = Event;

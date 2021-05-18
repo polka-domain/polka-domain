@@ -96,6 +96,83 @@ fn test_create_auction_should_work() {
 }
 
 #[test]
+fn test_create_auction_should_fail() {
+    new_test_ext().execute_with(|| {
+        assert_ok!(NFTPallet::create_class(
+			Origin::signed(ALICE),
+			vec![1],
+			Properties(ClassProperty::Transferable | ClassProperty::Burnable)
+		));
+
+        let event = Event::nft(nft::Event::CreatedClass(class_id_account(), CLASS_ID));
+		assert_eq!(last_event(), event);
+
+        assert_ok!(NFTPallet::mint(
+			Origin::signed(class_id_account()),
+			ALICE,
+			CLASS_ID,
+			vec![2],
+			5
+		));
+        let event = Event::nft(nft::Event::MintedToken(class_id_account(), ALICE, CLASS_ID, 5));
+		assert_eq!(last_event(), event);
+
+        assert_ok!(AuctionModule::create_auction(
+            Origin::signed(ALICE),
+			(CLASS_ID, 0),
+            CurrencyId::Token(TokenSymbol::NAME),
+            1,
+            10
+        ));
+        let event = Event::pallet_auction(crate::Event::AuctionCreated(0, ALICE));
+		assert_eq!(last_event(), event);
+
+        assert_ok!(AuctionModule::create_auction(
+            Origin::signed(ALICE),
+			(CLASS_ID, 1),
+            CurrencyId::Token(TokenSymbol::NAME),
+            1,
+            10
+        ));
+        let event = Event::pallet_auction(crate::Event::AuctionCreated(1, ALICE));
+		assert_eq!(last_event(), event);
+
+        assert_ok!(AuctionModule::create_auction(
+            Origin::signed(ALICE),
+			(CLASS_ID, 2),
+            CurrencyId::Token(TokenSymbol::NAME),
+            1,
+            10
+        ));
+        let event = Event::pallet_auction(crate::Event::AuctionCreated(2, ALICE));
+		assert_eq!(last_event(), event);
+
+        assert_ok!(AuctionModule::create_auction(
+            Origin::signed(ALICE),
+			(CLASS_ID, 3),
+            CurrencyId::Token(TokenSymbol::NAME),
+            1,
+            10
+        ));
+        let event = Event::pallet_auction(crate::Event::AuctionCreated(3, ALICE));
+		assert_eq!(last_event(), event);
+
+        assert_noop!(
+            AuctionModule::create_auction(
+                Origin::signed(ALICE),
+                (CLASS_ID, 4),
+                CurrencyId::Token(TokenSymbol::NAME),
+                1,
+                10
+            ),
+            Error::<Runtime>::ExceedMaxAuction
+        );
+
+        
+    });
+}
+
+#[test]
 fn test_bid_auction_should_work() {
     new_test_ext().execute_with(|| {
         assert_ok!(NFTPallet::create_class(
