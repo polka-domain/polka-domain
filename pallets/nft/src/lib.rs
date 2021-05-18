@@ -478,4 +478,14 @@ impl<T: Config> NFT<T::AccountId> for Pallet<T> {
 	fn transfer(from: &T::AccountId, to: &T::AccountId, token: (Self::ClassId, Self::TokenId)) -> DispatchResult {
 		Self::do_transfer(from, to, token)
 	}
+
+	fn reserve(owner: &T::AccountId, token: (Self::ClassId, Self::TokenId)) -> DispatchResult {
+		//todo!()
+		Ok(())
+	}
+
+	fn unreserve(owner: &T::AccountId, token: (Self::ClassId, Self::TokenId)) -> Self::Balance {
+		//todo!()
+		Self::Balance::default()
+	}
 }
