@@ -41,6 +41,6 @@ jobs:
       - name: Cargo Update
         run: cargo update -p environmental
       - name: Check
-        run: cargo check --all
+        run: cargo check --manifest-path node/parachain/Cargo.toml
       - name: Run tests
-        run: cargo test --all
+        run: cargo test --manifest-path node/parachain/Cargo.toml
