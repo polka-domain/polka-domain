@@ -163,15 +163,15 @@ pub mod pallet {
 			ensure!(duration > Zero::zero(), Error::<T>::InvalidDuration);
 
 			let creator = ensure_signed(origin)?;
-			let auction_id = NextAuctionId::<T>::get().unwrap();
-			let start_at = frame_system::Pallet::<T>::block_number();
+			let auction_id = NextAuctionId::<T>::get().unwrap_or_default();
+			let start_at = frame_system::Pallet::<T>::block_number().saturating_add(T::BlockNumber::from(1u32));
 			let end_at = start_at.saturating_add(duration);
 			ensure!(
 				AuctionEndAt::<T>::iter_prefix(end_at).count() <= T::MaxAuction::get() as usize,
 				Error::<T>::ExceedMaxAuction
 			);
 
-			//T::NFT::reserve(&creator, token0)?;
+			T::NFT::reserve(&creator, token0)?;
 
 			Auction::<T>::insert(auction_id, AuctionDetails {
 				creator: creator.clone(),
@@ -226,9 +226,9 @@ pub mod pallet {
 			ensure!(creator == auction.creator, Error::<T>::InvalidCreator);
 
 			let now = frame_system::Pallet::<T>::block_number();
-			ensure!(auction.start_at < now, Error::<T>::AuctionStarted);
+			ensure!(auction.start_at > now, Error::<T>::AuctionStarted);
 
-			//T::NFT::unreserve(&auction.creator, auction.token0);
+			T::NFT::unreserve(&auction.creator, auction.token0);
 			Auction::<T>::remove(auction_id);
 
 			Self::deposit_event(Event::AuctionCancelled(auction_id));
@@ -248,7 +248,7 @@ pub mod pallet {
 		fn on_finalize(now: T::BlockNumber) {
 			for (auction_id, _) in AuctionEndAt::<T>::drain_prefix(&now) {
 				Auction::<T>::try_mutate(auction_id, |auction| -> DispatchResult {
-					//T::NFT::unreserve(&auction.creator, auction.token0);
+					T::NFT::unreserve(&auction.creator, auction.token0);
 
 					if AuctionWinner::<T>::contains_key(auction_id) {
 						let (winner, winner_amount1) = AuctionWinner::<T>::get(auction_id);
