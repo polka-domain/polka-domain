@@ -163,9 +163,9 @@ pub mod pallet {
 			ensure!(duration > Zero::zero(), Error::<T>::InvalidDuration);
 
 			let creator = ensure_signed(origin)?;
-			let auction_id = NextAuctionId::<T>::get().unwrap();
-			let start_at = frame_system::Pallet::<T>::block_number();
-			let end_at = start_at.saturating_add(duration);
+			let auction_id = NextAuctionId::<T>::get().unwrap_or_default();
+			let start_at = frame_system::Pallet::<T>::block_number().saturating_add(T::BlockNumber::from(1u32));
+            let end_at = start_at.saturating_add(duration);
 			ensure!(
 				AuctionEndAt::<T>::iter_prefix(end_at).count() <= T::MaxAuction::get() as usize,
 				Error::<T>::ExceedMaxAuction
@@ -226,7 +226,7 @@ pub mod pallet {
 			ensure!(creator == auction.creator, Error::<T>::InvalidCreator);
 
 			let now = frame_system::Pallet::<T>::block_number();
-			ensure!(auction.start_at < now, Error::<T>::AuctionStarted);
+			ensure!(auction.start_at > now, Error::<T>::AuctionStarted);
 
 			//T::NFT::unreserve(&auction.creator, auction.token0);
 			Auction::<T>::remove(auction_id);
