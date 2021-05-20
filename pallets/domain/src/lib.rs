@@ -27,15 +27,6 @@ use sp_std::prelude::*;
 
 pub use pallet::*;
 
-#[cfg(test)]
-mod mock;
-
-#[cfg(test)]
-mod tests;
-
-#[cfg(feature = "runtime-benchmarks")]
-mod benchmarking;
-
 #[derive(Clone, Eq, PartialEq, Encode, Decode, Default, RuntimeDebug)]
 pub struct DomainAddress<AccountId> {
 	native: AccountId,
