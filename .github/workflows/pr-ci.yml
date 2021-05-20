@@ -1,4 +1,4 @@
-name: ci-check-test
+name: pr-ci
 
 on:
   pull_request:
@@ -38,9 +38,7 @@ jobs:
           toolchain: nightly
           target: wasm32-unknown-unknown
           default: true
-      - name: Cargo Update
-        run: cargo update -p environmental
       - name: Check
-        run: cargo check --manifest-path node/parachain/Cargo.toml
-      - name: Run tests
-        run: cargo test --manifest-path node/parachain/Cargo.toml
+        run: cargo check
+      - name: Test
+        run: cargo test

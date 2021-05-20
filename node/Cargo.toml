@@ -1,5 +1,5 @@
 [package]
-name = "polka-domain-parachain"
+name = "polka-domain-collator"
 version = "0.1.0"
 authors = ["Alkaid <alkaidwe@gmail.com>"]
 edition = "2018"
@@ -7,7 +7,7 @@ license = "Apache-2.0"
 build = "build.rs"
 
 [[bin]]
-name = "polka-domain-parachain"
+name = "polka-domain-collator"
 
 [dependencies]
 derive_more = "0.15.0"
@@ -22,8 +22,8 @@ serde = { version = "1.0.119", features = ["derive"] }
 hex-literal = "0.2.1"
 
 # Parachain dependencies
-parachain-runtime = { package = "polka-domain-parachain-runtime", path = "../../runtime/parachain" }
-rococo-parachain-primitives = { package = "polka-domain-primitives", path = "../../primitives" }
+parachain-runtime = { package = "polka-domain-runtime", path = "../runtime" }
+rococo-parachain-primitives = { package = "polka-domain-primitives", path = "../primitives" }
 
 # Substrate dependencies
 sp-runtime = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "rococo-v1" }

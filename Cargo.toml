@@ -1,15 +1,13 @@
 [workspace]
 members = [
-	"node/parachain",
-	"node/standalone",
+	"node",
 	"pallets/auction",
 	"pallets/domain",
 	"pallets/fixed-swap",
 	"pallets/nft",
 	"pallets/order",
 	"primitives",
-	"runtime/parachain",
-	"runtime/standalone",
+	"runtime",
 ]
 
 # The list of dependencies below (which can be both direct and indirect dependencies) are crates
