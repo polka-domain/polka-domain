@@ -7,7 +7,7 @@ build = "build.rs"
 edition = "2018"
 
 [[bin]]
-name = "polkadot-collator"
+name = "polka-domain-collator"
 path = "src/main.rs"
 
 [dependencies]
