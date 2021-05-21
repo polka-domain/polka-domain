@@ -65,7 +65,7 @@ use xcm_builder::{
 	UsingComponents, SignedToAccountId32,
 };
 use xcm_executor::{Config, XcmExecutor};
-use pallet_xcm::XcmPassthrough;
+use pallet_xcm::{XcmPassthrough, EnsureXcm, IsMajorityOfBody};
 use xcm::v0::Xcm;
 
 pub type SessionHandlers = ();
@@ -76,12 +76,13 @@ impl_opaque_keys! {
 	}
 }
 
+/// This runtime version.
 pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("polka-domain-parachain"),
 	impl_name: create_runtime_str!("polka-domain-parachain"),
 	authoring_version: 1,
 	spec_version: 1,
-	impl_version: 1,
+	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
 };
@@ -97,9 +98,9 @@ pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
 
-pub const ROC: Balance = 1_000_000_000_000;
-pub const MILLIROC: Balance = 1_000_000_000;
-pub const MICROROC: Balance = 1_000_000;
+pub const NAME: Balance = 1_000_000_000_000;
+pub const MILLINAME: Balance = 1_000_000_000;
+pub const MICRONAME: Balance = 1_000_000;
 
 // 1 in 4 blocks (on average, not counting collisions) will be primary babe blocks.
 pub const PRIMARY_PROBABILITY: (u64, u64) = (1, 4);
@@ -200,12 +201,14 @@ impl pallet_timestamp::Config for Runtime {
 }
 
 parameter_types! {
-	pub const ExistentialDeposit: u128 = 500;
+	pub const ExistentialDeposit: u128 = 1 * MILLINAME;
+	pub const TransferFee: u128 = 1 * MILLINAME;
+	pub const CreationFee: u128 = 1 * MILLINAME;
+	pub const TransactionByteFee: u128 = 1 * MICRONAME;
 	pub const MaxLocks: u32 = 50;
 }
 
 impl pallet_balances::Config for Runtime {
-	type MaxLocks = MaxLocks;
 	/// The type for recording an account's balance.
 	type Balance = Balance;
 	/// The ubiquitous event type.
@@ -213,11 +216,8 @@ impl pallet_balances::Config for Runtime {
 	type DustRemoval = ();
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
-	type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
-}
-
-parameter_types! {
-	pub const TransactionByteFee: Balance = 1;
+	type WeightInfo = ();
+	type MaxLocks = MaxLocks;
 }
 
 impl pallet_transaction_payment::Config for Runtime {
@@ -228,13 +228,8 @@ impl pallet_transaction_payment::Config for Runtime {
 }
 
 impl pallet_sudo::Config for Runtime {
-	type Event = Event;
 	type Call = Call;
-}
-
-impl domain::Config for Runtime {
 	type Event = Event;
-	type Call = Call;
 }
 
 parameter_types! {
@@ -317,8 +312,8 @@ pub type XcmOriginToTransactDispatchOrigin = (
 parameter_types! {
 	// One XCM operation is 1_000_000 weight - almost certainly a conservative estimate.
 	pub UnitWeightCost: Weight = 1_000_000;
-	// One ROC buys 1 second of weight.
-	pub const WeightPrice: (MultiLocation, u128) = (X1(Parent), ROC);
+	// One NAME buys 1 second of weight.
+	pub const WeightPrice: (MultiLocation, u128) = (X1(Parent), NAME);
 }
 
 match_type! {
@@ -342,7 +337,7 @@ impl Config for XcmConfig {
 	type AssetTransactor = LocalAssetTransactor;
 	type OriginConverter = XcmOriginToTransactDispatchOrigin;
 	type IsReserve = NativeAsset;
-	type IsTeleporter = NativeAsset;	// <- should be enough to allow teleportation of ROC
+	type IsTeleporter = NativeAsset;	// <- should be enough to allow teleportation of NAME
 	type LocationInverter = LocationInverter<Ancestry>;
 	type Barrier = Barrier;
 	type Weigher = FixedWeightBounds<UnitWeightCost, Call>;
@@ -399,61 +394,43 @@ impl cumulus_ping::Config for Runtime {
 	type XcmSender = XcmRouter;
 }
 
-// orml_traits::parameter_type_with_key! {
-// 	pub ExistentialDeposits: |_currency_id: CurrencyId| -> Balance {
-// 		Zero::zero()
-// 	};
-// }
-
-// impl orml_tokens::Config for Runtime {
-// 	type Event = Event;
-// 	type Balance = Balance;
-// 	type Amount = Amount;
-// 	type CurrencyId = CurrencyId;
-// 	type WeightInfo = ();
-// 	type ExistentialDeposits = ExistentialDeposits;
-// 	type OnDust = ();
-// }
-//
-// parameter_types! {
-// 	pub const GetPolkaDomainTokenId: CurrencyId = CurrencyId::Token(TokenSymbol::NAME);
-// }
-//
-// pub type PolkaDomainToken = orml_currencies::BasicCurrencyAdapter<Runtime, Balances, Amount, BlockNumber>;
-//
-// impl orml_currencies::Config for Runtime {
-// 	type Event = Event;
-// 	type MultiCurrency = orml_tokens::Pallet<Runtime>;
-// 	type NativeCurrency = PolkaDomainToken;
-// 	type GetNativeCurrencyId = GetPolkaDomainTokenId;
-// 	type WeightInfo = ();
-// }
-
 impl pallet_aura::Config for Runtime {
 	type AuthorityId = AuraId;
 }
 
-// Create the runtime by composing the FRAME pallets that were previously configured.
-construct_runtime!(
+parameter_types! {
+	pub DomainDeposit: Balance = 5 * NAME;
+	pub const MaxDomainLen: u32 = 64;
+}
+
+impl domain_registrar::Config for Runtime {
+	type DomainDeposit = ();
+	type MaxDomainLen = MaxDomainLen;
+	type Event = Event;
+	type Currency = Balances;
+	type Call = Call;
+}
+
+construct_runtime! {
 	pub enum Runtime where
 		Block = Block,
 		NodeBlock = generic::Block<Header, sp_runtime::OpaqueExtrinsic>,
-		UncheckedExtrinsic = UncheckedExtrinsic
+		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
-		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Call, Storage},
+		System: frame_system::{Pallet, Call, Storage, Config, Event<T>},
 		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
-		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
+		Sudo: pallet_sudo::{Pallet, Call, Storage, Config<T>, Event<T>},
+		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Call, Storage},
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage},
 
 		// Parachain
 		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Storage, Inherent, Event<T>, ValidateUnsigned},
 		ParachainInfo: parachain_info::{Pallet, Storage, Config},
 
+		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+
 		Aura: pallet_aura::{Pallet, Config<T>},
 		AuraExt: cumulus_pallet_aura_ext::{Pallet, Config},
-
-		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 
 		// XCM helpers.
 		XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Call, Storage, Event<T>},
@@ -461,16 +438,12 @@ construct_runtime!(
 		CumulusXcm: cumulus_pallet_xcm::{Pallet, Call, Event<T>, Origin},
 		DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>},
 
-		// ORML
-		// Currencies: orml_currencies::{Pallet, Call, Event<T>},
-		// Tokens: orml_tokens::{Pallet, Storage, Call, Event<T>, Config<T>},
-
 		// Polka Domain Modules
-		Domain: domain::{Pallet, Call, Storage, Event<T>},
+		DomainRegistrar: domain_registrar::{Pallet, Call, Storage, Event<T>},
 
 		Spambot: cumulus_ping::{Pallet, Call, Storage, Event<T>},
 	}
-);
+}
 
 /// Alias to 512-bit hash when used in the context of a transaction signature on the chain.
 pub type Signature = sp_runtime::MultiSignature;
@@ -601,3 +574,8 @@ impl_runtime_apis! {
 		}
 	}
 }
+
+cumulus_pallet_parachain_system::register_validate_block!(
+	Runtime,
+	cumulus_pallet_aura_ext::BlockExecutor::<Runtime, Executive>,
+);

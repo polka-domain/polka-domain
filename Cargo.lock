@@ -4948,7 +4948,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-domain"
+name = "pallet-domain-registrar"
 version = "0.1.0"
 dependencies = [
  "frame-benchmarking",
@@ -6076,7 +6076,7 @@ dependencies = [
  "hex-literal 0.3.1",
  "pallet-aura",
  "pallet-balances",
- "pallet-domain",
+ "pallet-domain-registrar",
  "pallet-randomness-collective-flip",
  "pallet-sudo",
  "pallet-timestamp",
