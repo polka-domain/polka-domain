@@ -44,7 +44,7 @@ hex-literal = { version = "0.3.1", optional = true }
 
 # Polka Domain dependencies
 primitives = { package = "polka-domain-primitives", path = "../primitives", default-features = false }
-domain = { package = "pallet-domain", path = "../pallets/domain", default-features = false }
+domain-registrar = { package = "pallet-domain-registrar", path = "../pallets/domain-registrar", default-features = false }
 
 # Cumulus dependencies
 parachain-info = { git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.1" }
@@ -102,7 +102,7 @@ std = [
 	"frame-system-rpc-runtime-api/std",
 
 	"primitives/std",
-	"domain/std",
+	"domain-registrar/std",
 
 	"parachain-info/std",
 	"cumulus-pallet-aura-ext/std",

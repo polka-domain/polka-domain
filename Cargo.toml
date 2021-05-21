@@ -2,7 +2,7 @@
 members = [
 	"node",
 	"pallets/auction",
-	"pallets/domain",
+	"pallets/domain-registrar",
 	"pallets/fixed-swap",
 	"pallets/nft",
 	"pallets/order",

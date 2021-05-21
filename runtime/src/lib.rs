@@ -97,7 +97,7 @@ pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
 
-pub const ROC: Balance = 1_000_000_000_000;
+pub const NAME: Balance = 1_000_000_000_000;
 pub const MILLIROC: Balance = 1_000_000_000;
 pub const MICROROC: Balance = 1_000_000;
 
@@ -232,11 +232,6 @@ impl pallet_sudo::Config for Runtime {
 	type Call = Call;
 }
 
-impl domain::Config for Runtime {
-	type Event = Event;
-	type Call = Call;
-}
-
 parameter_types! {
 	pub const ReservedXcmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT / 4;
 	pub const ReservedDmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT / 4;
@@ -317,8 +312,8 @@ pub type XcmOriginToTransactDispatchOrigin = (
 parameter_types! {
 	// One XCM operation is 1_000_000 weight - almost certainly a conservative estimate.
 	pub UnitWeightCost: Weight = 1_000_000;
-	// One ROC buys 1 second of weight.
-	pub const WeightPrice: (MultiLocation, u128) = (X1(Parent), ROC);
+	// One NAME buys 1 second of weight.
+	pub const WeightPrice: (MultiLocation, u128) = (X1(Parent), NAME);
 }
 
 match_type! {
@@ -342,7 +337,7 @@ impl Config for XcmConfig {
 	type AssetTransactor = LocalAssetTransactor;
 	type OriginConverter = XcmOriginToTransactDispatchOrigin;
 	type IsReserve = NativeAsset;
-	type IsTeleporter = NativeAsset;	// <- should be enough to allow teleportation of ROC
+	type IsTeleporter = NativeAsset;	// <- should be enough to allow teleportation of NAME
 	type LocationInverter = LocationInverter<Ancestry>;
 	type Barrier = Barrier;
 	type Weigher = FixedWeightBounds<UnitWeightCost, Call>;
@@ -399,38 +394,21 @@ impl cumulus_ping::Config for Runtime {
 	type XcmSender = XcmRouter;
 }
 
-// orml_traits::parameter_type_with_key! {
-// 	pub ExistentialDeposits: |_currency_id: CurrencyId| -> Balance {
-// 		Zero::zero()
-// 	};
-// }
-
-// impl orml_tokens::Config for Runtime {
-// 	type Event = Event;
-// 	type Balance = Balance;
-// 	type Amount = Amount;
-// 	type CurrencyId = CurrencyId;
-// 	type WeightInfo = ();
-// 	type ExistentialDeposits = ExistentialDeposits;
-// 	type OnDust = ();
-// }
-//
-// parameter_types! {
-// 	pub const GetPolkaDomainTokenId: CurrencyId = CurrencyId::Token(TokenSymbol::NAME);
-// }
-//
-// pub type PolkaDomainToken = orml_currencies::BasicCurrencyAdapter<Runtime, Balances, Amount, BlockNumber>;
-//
-// impl orml_currencies::Config for Runtime {
-// 	type Event = Event;
-// 	type MultiCurrency = orml_tokens::Pallet<Runtime>;
-// 	type NativeCurrency = PolkaDomainToken;
-// 	type GetNativeCurrencyId = GetPolkaDomainTokenId;
-// 	type WeightInfo = ();
-// }
-
 impl pallet_aura::Config for Runtime {
 	type AuthorityId = AuraId;
+}
+
+parameter_types! {
+	pub DomainDeposit: Balance = 5 * NAME;
+	pub const MaxDomainLen: u32 = 64;
+}
+
+impl domain_registrar::Config for Runtime {
+	type DomainDeposit = ();
+	type MaxDomainLen = MaxDomainLen;
+	type Event = Event;
+	type Currency = Balances;
+	type Call = Call;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -461,12 +439,8 @@ construct_runtime!(
 		CumulusXcm: cumulus_pallet_xcm::{Pallet, Call, Event<T>, Origin},
 		DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>},
 
-		// ORML
-		// Currencies: orml_currencies::{Pallet, Call, Event<T>},
-		// Tokens: orml_tokens::{Pallet, Storage, Call, Event<T>, Config<T>},
-
 		// Polka Domain Modules
-		Domain: domain::{Pallet, Call, Storage, Event<T>},
+		DomainRegistrar: domain_registrar::{Pallet, Call, Storage, Event<T>},
 
 		Spambot: cumulus_ping::{Pallet, Call, Storage, Event<T>},
 	}
