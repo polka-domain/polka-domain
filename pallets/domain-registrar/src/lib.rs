@@ -21,38 +21,46 @@ use codec::{Encode, Decode};
 use frame_support::{
 	dispatch::PostDispatchInfo,
 	weights::GetDispatchInfo,
+	traits::Currency,
 };
 use sp_runtime::{traits::Dispatchable, RuntimeDebug};
 use sp_std::prelude::*;
 
 pub use pallet::*;
 
-#[cfg(test)]
-mod mock;
-
-#[cfg(test)]
-mod tests;
-
-#[cfg(feature = "runtime-benchmarks")]
-mod benchmarking;
-
-#[derive(Clone, Eq, PartialEq, Encode, Decode, Default, RuntimeDebug)]
-pub struct DomainAddress<AccountId> {
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Default, RuntimeDebug)]
+pub struct DomainInfo<AccountId, Balance> {
 	native: AccountId,
 	relay: Option<AccountId>,
 	ethereum: Vec<u8>,
+	deposit: Balance,
 }
 
 #[frame_support::pallet]
 pub mod pallet {
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
+	use frame_support::traits::ReservableCurrency;
 	use super::*;
+
+	type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
+
+		#[pallet::constant]
+		/// The deposit to be paid to register a domain.
+		type DomainDeposit: Get<BalanceOf<Self>>;
+
+		#[pallet::constant]
+		/// The deposit to be paid to register a domain.
+		type MaxDomainLen: Get<u32>;
+
 		/// Because this pallet emits events, it depends on the runtime's definition of an event.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+
+		/// The system's currency for domain payment.
+		type Currency: ReservableCurrency<Self::AccountId>;
 
 		/// The overarching call type.
 		type Call: Parameter + Dispatchable<Origin=Self::Origin, PostInfo=PostDispatchInfo> + GetDispatchInfo;
@@ -68,22 +76,20 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn domain_addresses)]
-	pub(super) type DomainAddresses<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, DomainAddress<T::AccountId>, ValueQuery>;
-
-	#[pallet::storage]
-	#[pallet::getter(fn accounts)]
-	pub(super) type Accounts<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, T::AccountId, ValueQuery>;
+	pub(super) type DomainInfos<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, DomainInfo<T::AccountId, BalanceOf<T>>, ValueQuery>;
 
 	#[pallet::event]
 	#[pallet::metadata(T::AccountId = "AccountId")]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		DomainSet(T::AccountId, Vec<u8>),
+		DomainRegistered(T::AccountId, Vec<u8>),
+		DomainDeregistered(T::AccountId, Vec<u8>),
 		Sent(T::AccountId, Vec<u8>),
 	}
 
 	#[pallet::error]
 	pub enum Error<T> {
+		InvalidDomainLength,
 		InvalidTarget,
 	}
 
@@ -93,7 +99,7 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T:Config> Pallet<T> {
 		#[pallet::weight(0)]
-		pub(super) fn set_domain(
+		pub(super) fn register(
 			origin: OriginFor<T>,
 			domain: Vec<u8>,
 			ethereum: Vec<u8>,
@@ -101,15 +107,32 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
 
-			<DomainAddresses<T>>::insert(&domain, DomainAddress {
+			ensure!(domain.len() <= T::MaxDomainLen::get() as usize, Error::<T>::InvalidDomainLength);
+			let deposit = T::DomainDeposit::get();
+			T::Currency::reserve(&who, deposit)?;
+			<DomainInfos<T>>::insert(&domain, DomainInfo {
 				native: who.clone(),
 				relay,
 				ethereum,
+				deposit,
 			});
 			<Domains<T>>::insert(&who, &domain);
-			<Accounts<T>>::insert(&domain, &who);
 
-			Self::deposit_event(Event::DomainSet(who, domain));
+			Self::deposit_event(Event::DomainRegistered(who, domain));
+
+			Ok(().into())
+		}
+
+		#[pallet::weight(0)]
+		pub(super) fn deregister(
+			origin: OriginFor<T>,
+			domain: Vec<u8>,
+		) -> DispatchResultWithPostInfo {
+			let who = ensure_signed(origin)?;
+
+			let domain_info = <DomainInfos<T>>::take(&domain);
+			<Domains<T>>::remove(&who);
+			T::Currency::reserve(&who, domain_info.deposit)?;
 
 			Ok(().into())
 		}
@@ -124,8 +147,6 @@ pub mod pallet {
 			let who = ensure_signed(origin)?;
 
 			let domain = <Domains<T>>::get(&target);
-			let account = <Accounts<T>>::get(&target_domain);
-			ensure!(&target == &account, Error::<T>::InvalidTarget);
 
 			call.dispatch(frame_system::RawOrigin::Signed(who.clone()).into())
 				.map(|_| ()).map_err(|e| e.error)?;

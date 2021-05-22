@@ -30,12 +30,6 @@ use primitives::CurrencyId;
 
 pub use pallet::*;
 
-#[cfg(test)]
-mod mock;
-
-#[cfg(test)]
-mod tests;
-
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default)]
 pub struct PoolDetails<AccountId, Balance, ClassId, TokenId> {
 	maker: AccountId,
@@ -127,7 +121,7 @@ pub mod pallet {
 			let maker = ensure_signed(origin)?;
 			let order_id = NextOrderId::<T>::get().unwrap_or_default();
 
-			//T::NFT::reserve(&maker, token0)?;
+			T::NFT::reserve(&maker, token0)?;
 
 			Order::<T>::insert(order_id, PoolDetails {
 				maker: maker.clone(),
@@ -152,7 +146,7 @@ pub mod pallet {
 			let order = Order::<T>::get(order_id);
 			ensure!(maker == order.maker, Error::<T>::InvalidCreator);
 
-			//T::NFT::unreserve(&order.maker, order.token0);
+			T::NFT::unreserve(&order.maker, order.token0);
 
 			Order::<T>::remove(order_id);
 
@@ -170,7 +164,7 @@ pub mod pallet {
 			let taker = ensure_signed(origin)?;
 
 			Order::<T>::try_mutate(order_id, |order| -> DispatchResult {
-				//T::NFT::unreserve(&order.maker, order.token0);
+				T::NFT::unreserve(&order.maker, order.token0);
 				T::NFT::transfer(&order.maker, &taker, order.token0)?;
 				T::Currency::transfer(order.token1, &taker, &order.maker, amount1)?;
 				order.taker = Some(taker.clone());
