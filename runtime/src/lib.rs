@@ -67,7 +67,7 @@ use xcm_builder::{
 use xcm_executor::{Config, XcmExecutor};
 use pallet_xcm::{XcmPassthrough, EnsureXcm, IsMajorityOfBody};
 use xcm::v0::Xcm;
-pub use primitives::{CurrencyId, TokenSymbol, Amount};
+pub use primitives::{AuctionId, CurrencyId, TokenSymbol, Amount};
 use orml_traits::{parameter_type_with_key};
 
 pub type SessionHandlers = ();
@@ -453,6 +453,22 @@ impl order::Config for Runtime {
 	type NFT = NFT;
 }
 
+parameter_types! {
+	pub const MaxAuction: u32 = 100;
+}
+impl auction::Config for Runtime {
+	type Event = Event;
+	type AuctionId = AuctionId;
+	type Balance = Balance;
+	type ClassId = u32;
+	type TokenId = u64;
+	type ClassData = nft::ClassData<Balance>;
+	type TokenData = nft::TokenData<Balance>;
+	type Currency = Currency;
+	type NFT = NFT;
+	type MaxAuction = MaxAuction;
+}
+
 pub type NativeCurrency = orml_currencies::BasicCurrencyAdapter<Runtime, Balances, Amount, BlockNumber>;
 
 parameter_type_with_key! {
@@ -573,6 +589,8 @@ construct_runtime! {
 		DomainRegistrar: domain_registrar::{Pallet, Call, Storage, Event<T>},
 		NFT: nft::{Pallet, Call, Event<T>},
 		Order: order::{Pallet, Call, Event<T>},
+		Auction: auction::{Pallet, Call, Event<T>},
+
 
 		Spambot: cumulus_ping::{Pallet, Call, Storage, Event<T>},
 	}
