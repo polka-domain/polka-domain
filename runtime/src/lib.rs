@@ -67,6 +67,8 @@ use xcm_builder::{
 use xcm_executor::{Config, XcmExecutor};
 use pallet_xcm::{XcmPassthrough, EnsureXcm, IsMajorityOfBody};
 use xcm::v0::Xcm;
+pub use primitives::{CurrencyId, TokenSymbol, Amount};
+use orml_traits::{parameter_type_with_key};
 
 pub type SessionHandlers = ();
 
@@ -439,6 +441,52 @@ impl orml_nft::Config for Runtime {
 	type MaxTokenMetadata = MaxTokenMetadata;
 }
 
+impl order::Config for Runtime {
+	type Event = Event;
+	type OrderId = u32;
+	type Balance = Balance;
+	type ClassId = u32;
+	type TokenId = u64;
+	type ClassData = nft::ClassData<Balance>;
+	type TokenData = nft::TokenData<Balance>;
+	type Currency = Currency;
+	type NFT = NFT;
+}
+
+pub type NativeCurrency = orml_currencies::BasicCurrencyAdapter<Runtime, Balances, Amount, BlockNumber>;
+
+parameter_type_with_key! {
+	pub ExistentialDeposits: |_currency_id: CurrencyId| -> Balance {
+		Default::default()
+	};
+}
+
+impl orml_tokens::Config for Runtime {
+	type Event = Event;
+	type Balance = Balance;
+	type Amount = Amount;
+	type CurrencyId = CurrencyId;
+	type WeightInfo = ();
+	type ExistentialDeposits = ExistentialDeposits;
+	type OnDust = (); //todo
+	type MaxLocks = MaxLocks;
+}
+
+pub const NATIVE_CURRENCY_ID: CurrencyId = CurrencyId::Token(TokenSymbol::NAME);
+
+parameter_types! {
+	pub const GetNativeCurrencyId: CurrencyId = NATIVE_CURRENCY_ID;
+}
+
+impl orml_currencies::Config for Runtime {
+	type Event = Event;
+	type MultiCurrency = Tokens;
+	type NativeCurrency = NativeCurrency;
+	type GetNativeCurrencyId = GetNativeCurrencyId;
+	type WeightInfo = ();
+}
+
+
 // TODO: make those const fn
 pub fn dollar(decimals: u32) -> Balance {
 	10u128.saturating_pow(decimals)
@@ -518,10 +566,13 @@ construct_runtime! {
 
 		//ORML Core
 		OrmlNFT: orml_nft::{Pallet, Storage, Config<T>},
+		Tokens: orml_tokens::{Pallet, Storage, Event<T>, Config<T>},
+		Currency: orml_currencies::{Pallet, Call, Event<T>},
 
 		// Polka Domain Modules
 		DomainRegistrar: domain_registrar::{Pallet, Call, Storage, Event<T>},
 		NFT: nft::{Pallet, Call, Event<T>},
+		Order: order::{Pallet, Call, Event<T>},
 
 		Spambot: cumulus_ping::{Pallet, Call, Storage, Event<T>},
 	}
