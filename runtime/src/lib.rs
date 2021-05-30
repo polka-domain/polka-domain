@@ -44,7 +44,7 @@ pub use frame_support::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
 		DispatchClass, IdentityFee, Weight,
 	},
-	StorageValue,
+	StorageValue, PalletId,
 };
 use frame_system::limits::{BlockLength, BlockWeights};
 pub use pallet_balances::Call as BalancesCall;
@@ -411,6 +411,81 @@ impl domain_registrar::Config for Runtime {
 	type Call = Call;
 }
 
+parameter_types! {
+	pub CreateClassDeposit: Balance = 500 * NAME;
+	pub CreateTokenDeposit: Balance = 100 * NAME;
+	pub const NftPalletId: PalletId = PalletId(*b"pol/aNFT");
+}
+
+impl nft::Config for Runtime {
+	type Event = Event;
+	type CreateClassDeposit = CreateClassDeposit;
+	type CreateTokenDeposit = CreateTokenDeposit;
+	type PalletId = NftPalletId;
+	type WeightInfo = ();
+}
+
+parameter_types! {
+	pub const MaxClassMetadata: u32 = 256;
+	pub const MaxTokenMetadata: u32 = 256;
+}
+
+impl orml_nft::Config for Runtime {
+	type ClassId = u32;
+	type TokenId = u64;
+	type ClassData = nft::ClassData<Balance>;
+	type TokenData = nft::TokenData<Balance>;
+	type MaxClassMetadata = MaxClassMetadata;
+	type MaxTokenMetadata = MaxTokenMetadata;
+}
+
+// TODO: make those const fn
+pub fn dollar(decimals: u32) -> Balance {
+	10u128.saturating_pow(decimals)
+}
+
+pub fn cent(decimals: u32) -> Balance {
+	dollar(decimals) / 100
+}
+
+pub fn millicent(decimals: u32) -> Balance {
+	dollar(decimals) / 100 / 1000
+}
+
+pub fn microcent(decimals: u32) -> Balance {
+	dollar(decimals) / 100 / 1000 / 1000
+}
+
+pub fn deposit(items: u32, bytes: u32) -> Balance {
+	items as Balance * 2 * dollar(12) + (bytes as Balance) * 10 * millicent(12)
+}
+
+parameter_types! {
+	// One storage item; key size 32, value size 8; .
+	pub ProxyDepositBase: Balance = deposit(1, 8);
+	// Additional storage item size of 33 bytes.
+	pub ProxyDepositFactor: Balance = deposit(0, 33);
+	pub const MaxProxies: u16 = 32;
+	pub AnnouncementDepositBase: Balance = deposit(1, 8);
+	pub AnnouncementDepositFactor: Balance = deposit(0, 66);
+	pub const MaxPending: u16 = 32;
+}
+
+impl pallet_proxy::Config for Runtime {
+	type Event = Event;
+	type Call = Call;
+	type Currency = Balances;
+	type ProxyType = ();
+	type ProxyDepositBase = ProxyDepositBase;
+	type ProxyDepositFactor = ProxyDepositFactor;
+	type MaxProxies = MaxProxies;
+	type WeightInfo = ();
+	type MaxPending = MaxPending;
+	type CallHasher = BlakeTwo256;
+	type AnnouncementDepositBase = AnnouncementDepositBase;
+	type AnnouncementDepositFactor = AnnouncementDepositFactor;
+}
+
 construct_runtime! {
 	pub enum Runtime where
 		Block = Block,
@@ -438,8 +513,15 @@ construct_runtime! {
 		CumulusXcm: cumulus_pallet_xcm::{Pallet, Call, Event<T>, Origin},
 		DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>},
 
+		// Utility
+		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>},
+
+		//ORML Core
+		OrmlNFT: orml_nft::{Pallet, Storage, Config<T>},
+
 		// Polka Domain Modules
 		DomainRegistrar: domain_registrar::{Pallet, Call, Storage, Event<T>},
+		NFT: nft::{Pallet, Call, Event<T>},
 
 		Spambot: cumulus_ping::{Pallet, Call, Storage, Event<T>},
 	}

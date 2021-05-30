@@ -160,5 +160,6 @@ fn testnet_genesis(
 			authorities: initial_authorities,
 		},
 		cumulus_pallet_aura_ext: Default::default(),
+		orml_nft: Default::default(),
 	}
 }
