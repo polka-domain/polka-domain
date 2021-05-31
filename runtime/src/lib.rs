@@ -44,7 +44,7 @@ pub use frame_support::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
 		DispatchClass, IdentityFee, Weight,
 	},
-	StorageValue,
+	StorageValue, PalletId,
 };
 use frame_system::limits::{BlockLength, BlockWeights};
 pub use pallet_balances::Call as BalancesCall;
@@ -67,6 +67,8 @@ use xcm_builder::{
 use xcm_executor::{Config, XcmExecutor};
 use pallet_xcm::{XcmPassthrough, EnsureXcm, IsMajorityOfBody};
 use xcm::v0::Xcm;
+pub use primitives::{AuctionId, CurrencyId, TokenSymbol, Amount};
+use orml_traits::{parameter_type_with_key};
 
 pub type SessionHandlers = ();
 
@@ -77,6 +79,7 @@ impl_opaque_keys! {
 }
 
 /// This runtime version.
+#[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("polka-domain-parachain"),
 	impl_name: create_runtime_str!("polka-domain-parachain"),
@@ -367,6 +370,7 @@ impl pallet_xcm::Config for Runtime {
 	type XcmExecuteFilter = All<(MultiLocation, Xcm<Call>)>;
 	type XcmExecutor = XcmExecutor<XcmConfig>;
 	type XcmTeleportFilter = All<(MultiLocation, Vec<MultiAsset>)>;
+	type XcmReserveTransferFilter = ();
 	type Weigher = FixedWeightBounds<UnitWeightCost, Call>;
 }
 
@@ -411,6 +415,143 @@ impl domain_registrar::Config for Runtime {
 	type Call = Call;
 }
 
+parameter_types! {
+	pub CreateClassDeposit: Balance = 500 * NAME;
+	pub CreateTokenDeposit: Balance = 100 * NAME;
+	pub const NftPalletId: PalletId = PalletId(*b"pol/aNFT");
+}
+
+impl nft::Config for Runtime {
+	type Event = Event;
+	type CreateClassDeposit = CreateClassDeposit;
+	type CreateTokenDeposit = CreateTokenDeposit;
+	type PalletId = NftPalletId;
+	type WeightInfo = ();
+}
+
+parameter_types! {
+	pub const MaxClassMetadata: u32 = 256;
+	pub const MaxTokenMetadata: u32 = 256;
+}
+
+impl orml_nft::Config for Runtime {
+	type ClassId = u32;
+	type TokenId = u64;
+	type ClassData = nft::ClassData<Balance>;
+	type TokenData = nft::TokenData<Balance>;
+	type MaxClassMetadata = MaxClassMetadata;
+	type MaxTokenMetadata = MaxTokenMetadata;
+}
+
+impl order::Config for Runtime {
+	type Event = Event;
+	type OrderId = u32;
+	type Balance = Balance;
+	type ClassId = u32;
+	type TokenId = u64;
+	type ClassData = nft::ClassData<Balance>;
+	type TokenData = nft::TokenData<Balance>;
+	type Currency = Currency;
+	type NFT = NFT;
+}
+
+parameter_types! {
+	pub const MaxAuction: u32 = 100;
+}
+impl auction::Config for Runtime {
+	type Event = Event;
+	type AuctionId = AuctionId;
+	type Balance = Balance;
+	type ClassId = u32;
+	type TokenId = u64;
+	type ClassData = nft::ClassData<Balance>;
+	type TokenData = nft::TokenData<Balance>;
+	type Currency = Currency;
+	type NFT = NFT;
+	type MaxAuction = MaxAuction;
+}
+
+pub type NativeCurrency = orml_currencies::BasicCurrencyAdapter<Runtime, Balances, Amount, BlockNumber>;
+
+parameter_type_with_key! {
+	pub ExistentialDeposits: |_currency_id: CurrencyId| -> Balance {
+		Default::default()
+	};
+}
+
+impl orml_tokens::Config for Runtime {
+	type Event = Event;
+	type Balance = Balance;
+	type Amount = Amount;
+	type CurrencyId = CurrencyId;
+	type WeightInfo = ();
+	type ExistentialDeposits = ExistentialDeposits;
+	type OnDust = (); //todo
+	type MaxLocks = MaxLocks;
+}
+
+pub const NATIVE_CURRENCY_ID: CurrencyId = CurrencyId::Token(TokenSymbol::NAME);
+
+parameter_types! {
+	pub const GetNativeCurrencyId: CurrencyId = NATIVE_CURRENCY_ID;
+}
+
+impl orml_currencies::Config for Runtime {
+	type Event = Event;
+	type MultiCurrency = Tokens;
+	type NativeCurrency = NativeCurrency;
+	type GetNativeCurrencyId = GetNativeCurrencyId;
+	type WeightInfo = ();
+}
+
+
+// TODO: make those const fn
+pub fn dollar(decimals: u32) -> Balance {
+	10u128.saturating_pow(decimals)
+}
+
+pub fn cent(decimals: u32) -> Balance {
+	dollar(decimals) / 100
+}
+
+pub fn millicent(decimals: u32) -> Balance {
+	dollar(decimals) / 100 / 1000
+}
+
+pub fn microcent(decimals: u32) -> Balance {
+	dollar(decimals) / 100 / 1000 / 1000
+}
+
+pub fn deposit(items: u32, bytes: u32) -> Balance {
+	items as Balance * 2 * dollar(12) + (bytes as Balance) * 10 * millicent(12)
+}
+
+parameter_types! {
+	// One storage item; key size 32, value size 8; .
+	pub ProxyDepositBase: Balance = deposit(1, 8);
+	// Additional storage item size of 33 bytes.
+	pub ProxyDepositFactor: Balance = deposit(0, 33);
+	pub const MaxProxies: u16 = 32;
+	pub AnnouncementDepositBase: Balance = deposit(1, 8);
+	pub AnnouncementDepositFactor: Balance = deposit(0, 66);
+	pub const MaxPending: u16 = 32;
+}
+
+impl pallet_proxy::Config for Runtime {
+	type Event = Event;
+	type Call = Call;
+	type Currency = Balances;
+	type ProxyType = ();
+	type ProxyDepositBase = ProxyDepositBase;
+	type ProxyDepositFactor = ProxyDepositFactor;
+	type MaxProxies = MaxProxies;
+	type WeightInfo = ();
+	type MaxPending = MaxPending;
+	type CallHasher = BlakeTwo256;
+	type AnnouncementDepositBase = AnnouncementDepositBase;
+	type AnnouncementDepositFactor = AnnouncementDepositFactor;
+}
+
 construct_runtime! {
 	pub enum Runtime where
 		Block = Block,
@@ -438,8 +579,20 @@ construct_runtime! {
 		CumulusXcm: cumulus_pallet_xcm::{Pallet, Call, Event<T>, Origin},
 		DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>},
 
+		// Utility
+		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>},
+
+		//ORML Core
+		OrmlNFT: orml_nft::{Pallet, Storage, Config<T>},
+		Tokens: orml_tokens::{Pallet, Storage, Event<T>, Config<T>},
+		Currency: orml_currencies::{Pallet, Call, Event<T>},
+
 		// Polka Domain Modules
 		DomainRegistrar: domain_registrar::{Pallet, Call, Storage, Event<T>},
+		NFT: nft::{Pallet, Call, Storage, Event<T>},
+		Order: order::{Pallet, Call, Storage, Event<T>},
+		Auction: auction::{Pallet, Call, Storage, Event<T>},
+
 
 		Spambot: cumulus_ping::{Pallet, Call, Storage, Event<T>},
 	}
