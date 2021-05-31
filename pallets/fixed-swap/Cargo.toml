@@ -8,20 +8,20 @@ edition = '2018'
 [dependencies]
 codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"] }
 log = { version = "0.4.14", default-features = false }
-frame-support = { version = "3.0.0", default-features = false }
-frame-system = { version = "3.0.0", default-features = false }
-frame-benchmarking = { version = "3.0.0", default-features = false, optional = true }
-sp-runtime = { version = "3.0.0", default-features = false }
-sp-std = { version = "3.0.0", default-features = false }
+frame-support = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.3" }
+frame-system = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.3" }
+frame-benchmarking = { git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "polkadot-v0.9.3" }
+sp-runtime = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.3" }
+sp-std = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.3" }
 
-orml-tokens = { default-features = false }
-orml-traits = { default-features = false }
+orml-tokens = { git = "https://github.com/open-web3-stack/open-runtime-module-library", default-features = false }
+orml-traits = { git = "https://github.com/open-web3-stack/open-runtime-module-library", default-features = false }
 
 [dev-dependencies]
-orml-currencies = { default-features = false }
-pallet-balances = { version = "3.0.0", default-features = false }
-sp-io = { version = "3.0.0", default-features = false }
-sp-runtime = { version = "3.0.0", default-features = false }
+orml-currencies = { git = "https://github.com/open-web3-stack/open-runtime-module-library", default-features = false }
+pallet-balances = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.3" }
+sp-io = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.3" }
+sp-runtime = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.3" }
 
 [features]
 default = ['std']
