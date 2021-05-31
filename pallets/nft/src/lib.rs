@@ -29,8 +29,7 @@ use frame_support::{
 		ReservableCurrency,
 	},
 	transactional,
-	// TODO un-comment next line
-	// PalletId,
+	PalletId,
 };
 use frame_system::pallet_prelude::*;
 // TODO un-comment next line
@@ -49,8 +48,6 @@ pub mod weights;
 pub use module::*;
 pub use weights::WeightInfo;
 
-// TODO use PalletId from frame_support
-use primitives::PalletId;
 use primitives::NFT;
 
 #[cfg(test)]
