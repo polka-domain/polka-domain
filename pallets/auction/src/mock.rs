@@ -33,7 +33,6 @@ use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
 };
-use primitives::PalletId;
 use frame_support::traits::GenesisBuild;
 use sp_runtime::{
 	traits::{AccountIdConversion},
@@ -163,6 +162,7 @@ impl orml_tokens::Config for Runtime {
 	type WeightInfo = ();
 	type ExistentialDeposits = ExistentialDeposits;
 	type OnDust = ();
+	type MaxLocks = ();
 }
 
 pub const NATIVE_CURRENCY_ID: CurrencyId = CurrencyId::Token(TokenSymbol::NAME);
@@ -193,11 +193,18 @@ impl nft::Config for Runtime {
 	type WeightInfo = ();
 }
 
+parameter_types! {
+	pub const MaxClassMetadata: u32 = 256;
+	pub const MaxTokenMetadata: u32 = 256;
+}
+
 impl orml_nft::Config for Runtime {
 	type ClassId = u32;
 	type TokenId = u64;
 	type ClassData = nft::ClassData<Balance>;
 	type TokenData = nft::TokenData<Balance>;
+	type MaxClassMetadata = MaxClassMetadata;
+	type MaxTokenMetadata = MaxTokenMetadata;
 }
 
 parameter_types! {
