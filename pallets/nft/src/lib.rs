@@ -75,11 +75,13 @@ pub enum ClassProperty {
 pub struct Properties(pub BitFlags<ClassProperty>);
 
 impl Eq for Properties {}
+
 impl Encode for Properties {
 	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
 		self.0.bits().using_encoded(f)
 	}
 }
+
 impl Decode for Properties {
 	fn decode<I: codec::Input>(input: &mut I) -> sp_std::result::Result<Self, codec::Error> {
 		let field = u8::decode(input)?;
@@ -138,7 +140,17 @@ pub mod module {
 		type WeightInfo: WeightInfo;
 	}
 
-    pub type GenesisTokenData<T> = (
+	/// Reserve NFT
+	#[pallet::storage]
+	#[pallet::getter(fn reserve_nft)]
+	pub(super) type ReserveNFT<T: Config> = StorageMap<
+		_,
+		Blake2_128Concat, (ClassIdOf<T>, TokenIdOf<T>),
+		<T as frame_system::Config>::AccountId,
+		ValueQuery
+	>;
+
+	pub type GenesisTokenData<T> = (
 		<T as frame_system::Config>::AccountId, // Token owner
 		Vec<u8>,                                // Token metadata
 		TokenData<BalanceOf<T>>,
@@ -186,7 +198,7 @@ pub mod module {
 		DestroyedClass(T::AccountId, ClassIdOf<T>),
 	}
 
-    #[pallet::genesis_config]
+	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
 		pub tokens: Vec<GenesisTokens<T>>,
 	}
@@ -202,49 +214,44 @@ pub mod module {
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
 		fn build(&self) {
 			self.tokens.iter().for_each(|token_class| {
-                
-                let who = &token_class.0;
-                let next_id = orml_nft::Pallet::<T>::next_class_id();
-                let owner: T::AccountId = T::PalletId::get().into_sub_account(next_id);
-                let class_deposit = T::CreateClassDeposit::get();
+				let who = &token_class.0;
+				let next_id = orml_nft::Pallet::<T>::next_class_id();
+				let owner: T::AccountId = T::PalletId::get().into_sub_account(next_id);
+				let class_deposit = T::CreateClassDeposit::get();
 
-                let proxy_deposit = <pallet_proxy::Pallet<T>>::deposit(1u32);
-                let total_deposit = proxy_deposit.saturating_add(class_deposit);
+				let proxy_deposit = <pallet_proxy::Pallet<T>>::deposit(1u32);
+				let total_deposit = proxy_deposit.saturating_add(class_deposit);
 
-                // ensure enough token for proxy deposit + class deposit
-                T::Currency::transfer(&who, &owner, total_deposit, KeepAlive).expect("Create class: transfer cannot fail while building genesis");
+				// ensure enough token for proxy deposit + class deposit
+				T::Currency::transfer(&who, &owner, total_deposit, KeepAlive).expect("Create class: transfer cannot fail while building genesis");
 
-                T::Currency::reserve(&owner, class_deposit).expect("Create class: reserve  cannot fail while building genesis");
+				T::Currency::reserve(&owner, class_deposit).expect("Create class: reserve  cannot fail while building genesis");
 
-                // owner add proxy delegate to origin
-                <pallet_proxy::Pallet<T>>::add_proxy_delegate(&owner, who.clone(), Default::default(), Zero::zero()).expect("Create class: add_proxy_delegate  cannot fail while building genesis");
+				// owner add proxy delegate to origin
+				<pallet_proxy::Pallet<T>>::add_proxy_delegate(&owner, who.clone(), Default::default(), Zero::zero()).expect("Create class: add_proxy_delegate  cannot fail while building genesis");
 
-                let properties = Properties::default();
-                let data = ClassData {
-                    deposit: class_deposit,
-                    properties,
-                };
+				let properties = Properties::default();
+				let data = ClassData {
+					deposit: class_deposit,
+					properties,
+				};
 
 				let class_id = orml_nft::Pallet::<T>::create_class(&owner, token_class.1.to_vec(), data)
 					.expect("Create class:  create_class cannot fail while building genesis");
 
 				for (account_id, token_metadata, token_data) in &token_class.3 {
+					let who = &account_id;
+					let to = &account_id;
+					let class_info = orml_nft::Pallet::<T>::classes(class_id).ok_or(Error::<T>::ClassIdNotFound).expect("Token mint: get class info cannot fail while building genesis");
+					if *account_id != class_info.owner {
+						let e: Result<i8, &str> = Err("Error::<T>::NoPermission");
+						e.expect("Token mint: Permission cannot fail while building genesis");
+					}
+					let deposit = T::CreateTokenDeposit::get();
+					let total_deposit = deposit.saturating_mul(1u32.into());
 
-                    let who = &account_id;
-                    let to = &account_id;
-                    let class_info = orml_nft::Pallet::<T>::classes(class_id).ok_or(Error::<T>::ClassIdNotFound).expect("Token mint: get class info cannot fail while building genesis");
-                    if *account_id != class_info.owner {
-                        let e: Result<i8, &str> = Err("Error::<T>::NoPermission");
-                        e.expect("Token mint: Permission cannot fail while building genesis");
-
-                    }
-                    let deposit = T::CreateTokenDeposit::get();
-                    let total_deposit = deposit.saturating_mul(1u32.into());
-
-                    T::Currency::transfer(&who, &to, total_deposit, KeepAlive).expect("Token mint: transfer cannot fail while building genesis");
-                    T::Currency::reserve(&to, total_deposit).expect("Token mint: reserve  cannot fail while building genesis");
-
-                    let data = TokenData { deposit };
+					T::Currency::transfer(&who, &to, total_deposit, KeepAlive).expect("Token mint: transfer cannot fail while building genesis");
+					T::Currency::reserve(&to, total_deposit).expect("Token mint: reserve  cannot fail while building genesis");
 
 					orml_nft::Pallet::<T>::mint(&to, class_id, token_metadata.to_vec(), token_data.clone())
 						.expect("Token mint cannot fail during genesis");
@@ -426,6 +433,7 @@ impl<T: Config> Pallet<T> {
 			data.properties.0.contains(ClassProperty::Transferable),
 			Error::<T>::NonTransferable
 		);
+		ensure!(!<ReserveNFT<T>>::contains_key(token), Error::<T>::NoPermission);
 
 		let token_info = orml_nft::Pallet::<T>::tokens(token.0, token.1).ok_or(Error::<T>::TokenIdNotFound)?;
 
@@ -448,6 +456,7 @@ impl<T: Config> Pallet<T> {
 			data.properties.0.contains(ClassProperty::Burnable),
 			Error::<T>::NonBurnable
 		);
+		ensure!(!<ReserveNFT<T>>::contains_key(token), Error::<T>::NoPermission);
 
 		let token_info = orml_nft::Pallet::<T>::tokens(token.0, token.1).ok_or(Error::<T>::TokenIdNotFound)?;
 		ensure!(*who == token_info.owner, Error::<T>::NoPermission);
@@ -455,6 +464,44 @@ impl<T: Config> Pallet<T> {
 		orml_nft::Pallet::<T>::burn(&who, token)?;
 
 		T::Currency::unreserve(&who, token_info.data.deposit);
+		Ok(())
+	}
+
+	/// Ensured atomic.
+	#[transactional]
+	fn do_reserve(who: &T::AccountId, token: (ClassIdOf<T>, TokenIdOf<T>)) -> DispatchResult {
+		let class_info = orml_nft::Pallet::<T>::classes(token.0).ok_or(Error::<T>::ClassIdNotFound)?;
+		let data = class_info.data;
+		ensure!(
+			data.properties.0.contains(ClassProperty::Burnable),
+			Error::<T>::NonBurnable
+		);
+
+		let token_info = orml_nft::Pallet::<T>::tokens(token.0, token.1).ok_or(Error::<T>::TokenIdNotFound)?;
+		ensure!(*who == token_info.owner, Error::<T>::NoPermission);
+
+		ensure!(!<ReserveNFT<T>>::contains_key(token), Error::<T>::NoPermission);
+		<ReserveNFT<T>>::insert(token, who);
+
+		Ok(())
+	}
+
+	/// Ensured atomic.
+	#[transactional]
+	fn do_unreserve(who: &T::AccountId, token: (ClassIdOf<T>, TokenIdOf<T>)) -> DispatchResult {
+		let class_info = orml_nft::Pallet::<T>::classes(token.0).ok_or(Error::<T>::ClassIdNotFound)?;
+		let data = class_info.data;
+		ensure!(
+			data.properties.0.contains(ClassProperty::Burnable),
+			Error::<T>::NonBurnable
+		);
+
+		let token_info = orml_nft::Pallet::<T>::tokens(token.0, token.1).ok_or(Error::<T>::TokenIdNotFound)?;
+		ensure!(*who == token_info.owner, Error::<T>::NoPermission);
+
+		ensure!(<ReserveNFT<T>>::get(token) == *who, Error::<T>::NoPermission);
+		<ReserveNFT<T>>::remove(token);
+
 		Ok(())
 	}
 }
@@ -477,12 +524,10 @@ impl<T: Config> NFT<T::AccountId> for Pallet<T> {
 	}
 
 	fn reserve(owner: &T::AccountId, token: (Self::ClassId, Self::TokenId)) -> DispatchResult {
-		//todo!()
-		Ok(())
+		Self::do_reserve(owner, token)
 	}
 
-	fn unreserve(owner: &T::AccountId, token: (Self::ClassId, Self::TokenId)) -> Self::Balance {
-		//todo!()
-		Self::Balance::default()
+	fn unreserve(owner: &T::AccountId, token: (Self::ClassId, Self::TokenId)) -> DispatchResult {
+		Self::do_unreserve(owner, token)
 	}
 }
