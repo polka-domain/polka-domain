@@ -1,0 +1,22 @@
+# docker build -t polka-domain  .
+# docker-compose up -d
+# docker-compose down -v
+version: "3.5"
+networks:
+  testnetwork:
+    name: domainnetwork
+
+services:
+  dev:
+    container_name: polka-domain
+    image: polka-domain:latest
+    ports:
+      - "9944:9944"
+    command: [
+    '/usr/local/bin/polka-domain-collator',
+    '--dev'
+    ]
+    networks:
+      testnetwork:
+        aliases: 
+          - domainnetwork
