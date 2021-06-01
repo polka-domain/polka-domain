@@ -25,6 +25,7 @@ use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{Filter, InstanceFilter},
 	RuntimeDebug,
+	PalletId,
 };
 use orml_traits::parameter_type_with_key;
 use primitives::{Amount, Balance, BlockNumber, CurrencyId, TokenSymbol};
@@ -33,7 +34,6 @@ use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
 };
-use frame_support::traits::GenesisBuild;
 use sp_runtime::{
 	traits::{AccountIdConversion},
 };

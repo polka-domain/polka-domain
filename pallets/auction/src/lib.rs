@@ -18,7 +18,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::{Encode, Decode};
-use frame_support::{RuntimeDebug, PalletId};
+use frame_support::{RuntimeDebug, transactional};
 use sp_runtime::traits::{AtLeast32BitUnsigned, Saturating, Zero};
 use sp_std::prelude::*;
 use orml_traits::{
@@ -228,7 +228,7 @@ pub mod pallet {
 			let now = frame_system::Pallet::<T>::block_number();
 			ensure!(auction.start_at > now, Error::<T>::AuctionStarted);
 
-			T::NFT::unreserve(&auction.creator, auction.token0);
+			T::NFT::unreserve(&auction.creator, auction.token0)?;
 			Auction::<T>::remove(auction_id);
 
 			Self::deposit_event(Event::AuctionCancelled(auction_id));
@@ -240,30 +240,32 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		fn on_finalize(now: T::BlockNumber) {
-			Self::on_finalize(now);
+			Self::on_finalize(now)
+				.unwrap_or_else(|_| log::debug!("Unexpected error occurred on finalize."));
 		}
 	}
 
 	impl<T: Config> Pallet<T> {
-		fn on_finalize(now: T::BlockNumber) {
+		#[transactional]
+		fn on_finalize(now: T::BlockNumber) -> DispatchResult {
 			for (auction_id, _) in AuctionEndAt::<T>::drain_prefix(&now) {
 				Auction::<T>::try_mutate(auction_id, |auction| -> DispatchResult {
-					T::NFT::unreserve(&auction.creator, auction.token0);
+					T::NFT::unreserve(&auction.creator, auction.token0)?;
 
 					if AuctionWinner::<T>::contains_key(auction_id) {
 						let (winner, winner_amount1) = AuctionWinner::<T>::get(auction_id);
 						T::Currency::unreserve(auction.token1, &winner, winner_amount1);
-						T::Currency::transfer(auction.token1, &winner, &auction.creator, winner_amount1);
-						T::NFT::transfer(&auction.creator, &winner, auction.token0);
+						T::Currency::transfer(auction.token1, &winner, &auction.creator, winner_amount1)?;
+						T::NFT::transfer(&auction.creator, &winner, auction.token0)?;
 
 						auction.winner = Some(winner);
 					}
 
+					Self::deposit_event(Event::AuctionEnd(auction_id));
 					Ok(())
-				});
-
-				Self::deposit_event(Event::AuctionEnd(auction_id));
+				})?;
 			}
+			Ok(())
 		}
 	}
 }
