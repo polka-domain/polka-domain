@@ -152,7 +152,7 @@ pub mod pallet {
 			let order = Order::<T>::get(order_id);
 			ensure!(maker == order.maker, Error::<T>::InvalidCreator);
 
-			T::NFT::unreserve(&order.maker, order.token0);
+			T::NFT::unreserve(&order.maker, order.token0)?;
 
 			Order::<T>::remove(order_id);
 
@@ -170,7 +170,7 @@ pub mod pallet {
 			let taker = ensure_signed(origin)?;
 
 			Order::<T>::try_mutate(order_id, |order| -> DispatchResult {
-				T::NFT::unreserve(&order.maker, order.token0);
+				T::NFT::unreserve(&order.maker, order.token0)?;
 				T::NFT::transfer(&order.maker, &taker, order.token0)?;
 				T::Currency::transfer(order.token1, &taker, &order.maker, amount1)?;
 				order.taker = Some(taker.clone());

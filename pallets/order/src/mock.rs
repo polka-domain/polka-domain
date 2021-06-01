@@ -33,7 +33,7 @@ use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
 };
-use frame_support::{PalletId, traits::GenesisBuild};
+use frame_support::PalletId;
 use sp_runtime::{
 	traits::{AccountIdConversion},
 };
