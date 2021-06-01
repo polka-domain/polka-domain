@@ -45,5 +45,5 @@ pub trait NFT<AccountId> {
 
     fn reserve(owner: &AccountId, token: (Self::ClassId, Self::TokenId)) -> DispatchResult;
 
-    fn unreserve(owner: &AccountId, token: (Self::ClassId, Self::TokenId)) -> Self::Balance;
+    fn unreserve(owner: &AccountId, token: (Self::ClassId, Self::TokenId)) -> DispatchResult;
 }

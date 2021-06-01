@@ -18,7 +18,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::{Encode, Decode};
-use frame_support::{RuntimeDebug, PalletId};
+use frame_support::RuntimeDebug;
 use sp_runtime::traits::{AtLeast32BitUnsigned, Saturating};
 use sp_std::prelude::*;
 use orml_traits::{
@@ -123,7 +123,7 @@ pub mod pallet {
 			token0: (T::ClassId, T::TokenId),
 			token1: CurrencyId,
 			total1: T::Balance,
-		) -> DispatchResultWithPostInfo {
+		) -> DispatchResult {
 			let maker = ensure_signed(origin)?;
 			let order_id = NextOrderId::<T>::get().unwrap_or_default();
 
@@ -140,7 +140,7 @@ pub mod pallet {
 
 			Self::deposit_event(Event::OrderCreated(order_id, maker));
 
-			Ok(().into())
+			Ok(())
 		}
 
 		#[pallet::weight(1000)]
