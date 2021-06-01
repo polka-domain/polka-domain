@@ -141,7 +141,7 @@ pub mod pallet {
 		pub(super) fn send(
 			origin: OriginFor<T>,
 			target: T::AccountId,
-			target_domain: Vec<u8>,
+			_target_domain: Vec<u8>,
 			call: Box<<T as Config>::Call>,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;

@@ -38,10 +38,6 @@ fn free_balance(who: &AccountId) -> Balance {
 	<Runtime as pallet_proxy::Config>::Currency::free_balance(who)
 }
 
-fn reserved_balance(who: &AccountId) -> Balance {
-	<Runtime as pallet_proxy::Config>::Currency::reserved_balance(who)
-}
-
 fn class_id_account() -> AccountId {
 	<Runtime as nft::Config>::PalletId::get().into_sub_account(CLASS_ID)
 }

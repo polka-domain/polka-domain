@@ -65,7 +65,7 @@ use xcm_builder::{
 	UsingComponents, SignedToAccountId32,
 };
 use xcm_executor::{Config, XcmExecutor};
-use pallet_xcm::{XcmPassthrough, EnsureXcm, IsMajorityOfBody};
+use pallet_xcm::XcmPassthrough;
 use xcm::v0::Xcm;
 pub use primitives::{AuctionId, CurrencyId, TokenSymbol, Amount};
 use orml_traits::{parameter_type_with_key};
