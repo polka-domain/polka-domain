@@ -18,7 +18,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::{Encode, Decode};
-use frame_support::RuntimeDebug;
+use frame_support::{RuntimeDebug, PalletId};
 use sp_runtime::traits::{AtLeast32BitUnsigned, Saturating, Zero};
 use sp_std::prelude::*;
 use orml_traits::{
@@ -29,6 +29,12 @@ use primitives::NFT;
 use primitives::CurrencyId;
 
 pub use pallet::*;
+
+#[cfg(test)]
+mod mock;
+
+#[cfg(test)]
+mod tests;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default)]
 pub struct AuctionDetails<AccountId, Balance, BlockNumber, ClassId, TokenId> {
