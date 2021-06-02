@@ -30,7 +30,7 @@ jobs:
       - name: Update OS
         run: sudo apt-get update -qq
       - name: Install dependencies
-        run: sudo apt install -y cmake pkg-config libssl-dev git gcc build-essential clang libclang-dev libz-dev
+        run: sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -38,7 +38,7 @@ jobs:
           toolchain: nightly
           target: wasm32-unknown-unknown
           default: true
-#      - name: Check
-#        run: cargo check
-      - name: Test
-        run: cargo test --all
+      - name: Check
+        run: cargo check
+#      - name: Test
+#        run: cargo test --all
