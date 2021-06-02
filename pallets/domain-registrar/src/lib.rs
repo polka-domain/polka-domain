@@ -28,6 +28,12 @@ use sp_std::prelude::*;
 
 pub use pallet::*;
 
+#[cfg(test)]
+mod mock;
+
+#[cfg(test)]
+mod tests;
+
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, RuntimeDebug)]
 pub struct DomainInfo<AccountId, Balance> {
 	native: AccountId,
@@ -132,7 +138,9 @@ pub mod pallet {
 
 			let domain_info = <DomainInfos<T>>::take(&domain);
 			<Domains<T>>::remove(&who);
-			T::Currency::reserve(&who, domain_info.deposit)?;
+			T::Currency::unreserve(&who, domain_info.deposit);
+
+			Self::deposit_event(Event::DomainDeregistered(who, domain));
 
 			Ok(().into())
 		}

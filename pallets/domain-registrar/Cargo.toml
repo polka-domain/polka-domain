@@ -13,11 +13,13 @@ frame-system = { git = "https://github.com/paritytech/substrate", default-featur
 frame-benchmarking = { git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "polkadot-v0.9.3" }
 sp-runtime = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.3" }
 sp-std = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.3" }
+primitives = { package = "polka-domain-primitives", path = "../../primitives", default-features = false }
 
 [dev-dependencies]
 serde = { version = "1.0.124" }
 sp-core = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.3" }
 sp-io = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.3" }
+pallet-balances = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.3" }
 
 [features]
 default = ['std']
@@ -29,5 +31,7 @@ std = [
 	'frame-benchmarking/std',
 	'sp-runtime/std',
 	'sp-std/std',
+	'pallet-balances/std',
+	'primitives/std',
 ]
 runtime-benchmarks = ["frame-benchmarking"]
