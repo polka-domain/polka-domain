@@ -71,7 +71,7 @@ fn test_make_order_should_work() {
             CurrencyId::Token(TokenSymbol::NAME),
             1
         ));
-        let event = Event::pallet_order(crate::Event::OrderCreated(0, ALICE));
+        let event = Event::pallet_order(crate::Event::OrderCreated(0, ALICE, (CLASS_ID, TOKEN_ID), CurrencyId::Token(TokenSymbol::NAME), 1));
 		assert_eq!(last_event(), event);
 
     });
@@ -104,7 +104,7 @@ fn test_take_order_should_work() {
             CurrencyId::Token(TokenSymbol::NAME),
             1
         ));
-        let event = Event::pallet_order(crate::Event::OrderCreated(0, ALICE));
+        let event = Event::pallet_order(crate::Event::OrderCreated(0, ALICE, (CLASS_ID, TOKEN_ID), CurrencyId::Token(TokenSymbol::NAME), 1));
 		assert_eq!(last_event(), event);
 
         let before_alice_balance = free_balance(&ALICE);
@@ -115,7 +115,7 @@ fn test_take_order_should_work() {
 			0,
             1
         ));
-        let event = Event::pallet_order(crate::Event::OrderSwapped(0, BOB));
+        let event = Event::pallet_order(crate::Event::OrderSwapped(0, BOB, 1));
 		assert_eq!(last_event(), event);
 
         assert_eq!(free_balance(&ALICE), before_alice_balance + 1);
@@ -150,7 +150,7 @@ fn test_cancel_order_should_work() {
             CurrencyId::Token(TokenSymbol::NAME),
             1
         ));
-        let event = Event::pallet_order(crate::Event::OrderCreated(0, ALICE));
+        let event = Event::pallet_order(crate::Event::OrderCreated(0, ALICE, (CLASS_ID, TOKEN_ID), CurrencyId::Token(TokenSymbol::NAME), 1));
 		assert_eq!(last_event(), event);
 
         assert_noop!(
