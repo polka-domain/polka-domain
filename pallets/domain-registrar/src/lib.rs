@@ -85,10 +85,10 @@ pub mod pallet {
 	pub(super) type DomainInfos<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, DomainInfo<T::AccountId, BalanceOf<T>>, ValueQuery>;
 
 	#[pallet::event]
-	#[pallet::metadata(T::AccountId = "AccountId")]
+	#[pallet::metadata(T::AccountId = "AccountId", BalanceOf<T> = "Balance")]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		DomainRegistered(T::AccountId, Vec<u8>),
+		DomainRegistered(T::AccountId, Vec<u8>, Vec<u8>, BalanceOf<T>),
 		DomainDeregistered(T::AccountId, Vec<u8>),
 		Sent(T::AccountId, Vec<u8>),
 	}
@@ -119,12 +119,12 @@ pub mod pallet {
 			<DomainInfos<T>>::insert(&domain, DomainInfo {
 				native: who.clone(),
 				relay,
-				ethereum,
+				ethereum: ethereum.clone(),
 				deposit,
 			});
 			<Domains<T>>::insert(&who, &domain);
 
-			Self::deposit_event(Event::DomainRegistered(who, domain));
+			Self::deposit_event(Event::DomainRegistered(who, domain, ethereum, deposit));
 
 			Ok(().into())
 		}

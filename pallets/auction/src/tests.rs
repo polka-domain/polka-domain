@@ -86,7 +86,14 @@ fn test_create_auction_should_work() {
             1,
             10
         ));
-        let event = Event::pallet_auction(crate::Event::AuctionCreated(0, ALICE));
+        let event = Event::pallet_auction(crate::Event::AuctionCreated(0, ALICE,
+            (CLASS_ID, TOKEN_ID),
+            CurrencyId::Token(TokenSymbol::NAME),
+            1,
+            10,
+            2,
+            2 + 10
+        ));
 		assert_eq!(last_event(), event);
     });
 }
@@ -120,7 +127,16 @@ fn test_create_auction_should_fail() {
             1,
             10
         ));
-        let event = Event::pallet_auction(crate::Event::AuctionCreated(0, ALICE));
+        let event = Event::pallet_auction(crate::Event::AuctionCreated(
+            0, 
+            ALICE,
+            (CLASS_ID, 0),
+            CurrencyId::Token(TokenSymbol::NAME),
+            1,
+            10,
+            2,
+            2 + 10
+        ));
 		assert_eq!(last_event(), event);
 
         assert_ok!(AuctionModule::create_auction(
@@ -130,7 +146,16 @@ fn test_create_auction_should_fail() {
             1,
             10
         ));
-        let event = Event::pallet_auction(crate::Event::AuctionCreated(1, ALICE));
+        let event = Event::pallet_auction(crate::Event::AuctionCreated(
+            1, 
+            ALICE,
+            (CLASS_ID, 1),
+            CurrencyId::Token(TokenSymbol::NAME),
+            1,
+            10,
+            2,
+            2 + 10
+        ));
 		assert_eq!(last_event(), event);
 
         assert_ok!(AuctionModule::create_auction(
@@ -140,7 +165,16 @@ fn test_create_auction_should_fail() {
             1,
             10
         ));
-        let event = Event::pallet_auction(crate::Event::AuctionCreated(2, ALICE));
+        let event = Event::pallet_auction(crate::Event::AuctionCreated(
+            2, 
+            ALICE,
+            (CLASS_ID, 2),
+            CurrencyId::Token(TokenSymbol::NAME),
+            1,
+            10,
+            2,
+            2 + 10
+        ));
 		assert_eq!(last_event(), event);
 
         assert_ok!(AuctionModule::create_auction(
@@ -150,7 +184,16 @@ fn test_create_auction_should_fail() {
             1,
             10
         ));
-        let event = Event::pallet_auction(crate::Event::AuctionCreated(3, ALICE));
+        let event = Event::pallet_auction(crate::Event::AuctionCreated(
+            3, 
+            ALICE,
+            (CLASS_ID, 3),
+            CurrencyId::Token(TokenSymbol::NAME),
+            1,
+            10,
+            2,
+            2 + 10
+        ));
 		assert_eq!(last_event(), event);
 
         assert_noop!(
@@ -197,7 +240,16 @@ fn test_bid_auction_should_work() {
             2,
             DURATION
         ));
-        let event = Event::pallet_auction(crate::Event::AuctionCreated(0, ALICE));
+        let event = Event::pallet_auction(crate::Event::AuctionCreated(
+            0, 
+            ALICE,
+            (CLASS_ID, TOKEN_ID),
+            CurrencyId::Token(TokenSymbol::NAME),
+            2,
+            DURATION,
+            2,
+            2 + DURATION
+        ));
 		assert_eq!(last_event(), event);
 
         assert_ok!(
@@ -216,7 +268,7 @@ fn test_bid_auction_should_work() {
 
         assert_eq!(free_balance(&ALICE), before_alice_balance + 2);
         
-        let event = Event::pallet_auction(crate::Event::AuctionEnd(0));
+        let event = Event::pallet_auction(crate::Event::AuctionEnd(0, Some(BOB), Some(2)));
 		assert_eq!(last_event(), event);
     });
 }
@@ -250,7 +302,16 @@ fn test_bid_auction_should_fail() {
             2,
             DURATION
         ));
-        let event = Event::pallet_auction(crate::Event::AuctionCreated(0, ALICE));
+        let event = Event::pallet_auction(crate::Event::AuctionCreated(
+            0, 
+            ALICE,
+            (CLASS_ID, TOKEN_ID),
+            CurrencyId::Token(TokenSymbol::NAME),
+            2,
+            DURATION,
+            2,
+            2 + DURATION
+        ));
 		assert_eq!(last_event(), event);
 
         assert_noop!(
@@ -323,7 +384,16 @@ fn test_cancel_auction_should_work() {
             1,
             10
         ));
-        let event = Event::pallet_auction(crate::Event::AuctionCreated(0, ALICE));
+        let event = Event::pallet_auction(crate::Event::AuctionCreated(
+            0, 
+            ALICE,
+            (CLASS_ID, TOKEN_ID),
+            CurrencyId::Token(TokenSymbol::NAME),
+            1,
+            10,
+            2,
+            2 + 10
+        ));
 		assert_eq!(last_event(), event);
 
         assert_ok!(AuctionModule::cancel_auction(
@@ -365,7 +435,16 @@ fn test_cancel_auction_should_fail() {
             2,
             DURATION
         ));
-        let event = Event::pallet_auction(crate::Event::AuctionCreated(0, ALICE));
+        let event = Event::pallet_auction(crate::Event::AuctionCreated(
+            0, 
+            ALICE,
+            (CLASS_ID, TOKEN_ID),
+            CurrencyId::Token(TokenSymbol::NAME),
+            2,
+            DURATION,
+            2,
+            2 + DURATION
+        ));
 		assert_eq!(last_event(), event);
 
         assert_noop!(

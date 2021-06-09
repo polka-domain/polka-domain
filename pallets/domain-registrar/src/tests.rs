@@ -39,7 +39,7 @@ fn test_register() {
 			Some(1)
 		));
 
-		let event = Event::pallet_domain_registrar(crate::Event::DomainRegistered(1, vec![1]));
+		let event = Event::pallet_domain_registrar(crate::Event::DomainRegistered(1, vec![1], vec![2], 1));
 		assert_eq!(last_event(), event);
 
 		assert_eq!(crate::Domains::<Runtime>::get(1), vec![1]);
@@ -67,7 +67,7 @@ fn deregister() {
 			Some(1)
 		));
 
-		let event = Event::pallet_domain_registrar(crate::Event::DomainRegistered(1, vec![1]));
+		let event = Event::pallet_domain_registrar(crate::Event::DomainRegistered(1, vec![1], vec![2], 1));
 		assert_eq!(last_event(), event);
 
 		assert_ok!(DomainModule::deregister(
@@ -94,7 +94,7 @@ fn send() {
 			Some(1)
 		));
 
-		let event = Event::pallet_domain_registrar(crate::Event::DomainRegistered(1, vec![1]));
+		let event = Event::pallet_domain_registrar(crate::Event::DomainRegistered(1, vec![1], vec![2], 1));
 		assert_eq!(last_event(), event);
 
 		let call = Box::new(Call::Balances(BalancesCall::transfer(1, 100)));
