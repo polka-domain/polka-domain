@@ -186,15 +186,15 @@ pub mod pallet {
 			NextAuctionId::<T>::put(auction_id.saturating_add(1u32.into()));
 
 			Self::deposit_event(Event::AuctionCreated(
-                auction_id, 
-                creator,
-                token0,
-                token1,
-                min1,
-                duration,
-                start_at,
-                end_at
-            ));
+				auction_id, 
+				creator,
+				token0,
+				token1,
+				min1,
+				duration,
+				start_at,
+				end_at
+			));
 
 			Ok(())
 		}
@@ -261,7 +261,7 @@ pub mod pallet {
 				Auction::<T>::try_mutate(auction_id, |auction| -> DispatchResult {
 					T::NFT::unreserve(&auction.creator, auction.token0)?;
 
-                    let mut final_amount = None;
+					let mut final_amount = None;
 					if AuctionWinner::<T>::contains_key(auction_id) {
 						let (winner, winner_amount1) = AuctionWinner::<T>::get(auction_id);
 						T::Currency::unreserve(auction.token1, &winner, winner_amount1);
@@ -269,7 +269,7 @@ pub mod pallet {
 						T::NFT::transfer(&auction.creator, &winner, auction.token0)?;
 
 						auction.winner = Some(winner);
-                        final_amount = Some(winner_amount1);
+						final_amount = Some(winner_amount1);
 					}
 
 					Self::deposit_event(Event::AuctionEnd(auction_id, auction.winner.clone(), final_amount));
