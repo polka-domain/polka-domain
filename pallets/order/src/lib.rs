@@ -102,11 +102,11 @@ pub mod pallet {
 	>;
 
 	#[pallet::event]
-	#[pallet::metadata(T::AccountId = "AccountId", T::OrderId = "OrderId")]
+	#[pallet::metadata(T::AccountId = "AccountId", T::OrderId = "OrderId", T::ClassId = "ClassId", T::TokenId = "TokenId", CurrencyId = "CurrencyId", T::Balance = "Balance")]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		OrderCreated(T::OrderId, T::AccountId),
-		OrderSwapped(T::OrderId, T::AccountId),
+		OrderCreated(T::OrderId, T::AccountId, (T::ClassId, T::TokenId), CurrencyId, T::Balance),
+		OrderSwapped(T::OrderId, T::AccountId, T::Balance),
 		OrderCancelled(T::OrderId),
 	}
 
@@ -138,7 +138,7 @@ pub mod pallet {
 			});
 			NextOrderId::<T>::put(order_id.saturating_add(1u32.into()));
 
-			Self::deposit_event(Event::OrderCreated(order_id, maker));
+			Self::deposit_event(Event::OrderCreated(order_id, maker, token0, token1, total1));
 
 			Ok(())
 		}
@@ -175,7 +175,7 @@ pub mod pallet {
 				T::Currency::transfer(order.token1, &taker, &order.maker, amount1)?;
 				order.taker = Some(taker.clone());
 
-				Self::deposit_event(Event::OrderSwapped(order_id, taker));
+				Self::deposit_event(Event::OrderSwapped(order_id, taker, amount1));
 				Ok(())
 			})?;
 

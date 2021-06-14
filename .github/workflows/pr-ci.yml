@@ -30,7 +30,7 @@ jobs:
       - name: Update OS
         run: sudo apt-get update -qq
       - name: Install dependencies
-        run: sudo apt install -y cmake pkg-config libssl-dev git gcc build-essential clang libclang-dev
+        run: sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -40,5 +40,5 @@ jobs:
           default: true
       - name: Check
         run: cargo check
-      - name: Test
-        run: cargo test --all
+#      - name: Test
+#        run: cargo test --all
