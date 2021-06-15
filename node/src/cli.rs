@@ -15,10 +15,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::chain_spec;
-use sc_cli;
 use std::path::PathBuf;
+
+use sc_cli;
 use structopt::StructOpt;
+
+use crate::chain_spec;
 
 /// Sub-commands supported by the collator.
 #[derive(Debug, StructOpt)]
@@ -129,14 +131,7 @@ impl RelayChainCli {
 	) -> Self {
 		let extension = chain_spec::Extensions::try_get(&*para_config.chain_spec);
 		let chain_id = extension.map(|e| e.relay_chain.clone());
-		let base_path = para_config
-			.base_path
-			.as_ref()
-			.map(|x| x.path().join("polkadot"));
-		Self {
-			base_path,
-			chain_id,
-			base: polkadot_cli::RunCmd::from_iter(relay_chain_args),
-		}
+		let base_path = para_config.base_path.as_ref().map(|x| x.path().join("polkadot"));
+		Self { base_path, chain_id, base: polkadot_cli::RunCmd::from_iter(relay_chain_args) }
 	}
 }

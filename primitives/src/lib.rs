@@ -22,14 +22,13 @@
 pub mod currency;
 pub mod nft;
 
+pub use currency::{CurrencyId, TokenSymbol};
+pub use nft::NFT;
 use sp_runtime::{
 	generic,
 	traits::{BlakeTwo256, IdentifyAccount, Verify},
 	MultiSignature,
 };
-
-pub use currency::{CurrencyId, TokenSymbol};
-pub use nft::NFT;
 
 pub type NFTBalance = u128;
 
@@ -86,11 +85,10 @@ pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 /// Block ID.
 pub type BlockId = generic::BlockId<Block>;
 
+// TODO remove following lines
+use codec::{Decode, Encode};
 /// Opaque, encoded, unchecked extrinsic.
 pub use sp_runtime::OpaqueExtrinsic as UncheckedExtrinsic;
-
-// TODO remove following lines
-use codec::{Encode, Decode};
 use sp_runtime::TypeId;
 
 /// A pallet identifier. These are per pallet and should be stored in a registry somewhere.

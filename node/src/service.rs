@@ -15,6 +15,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::sync::Arc;
+
 use cumulus_client_consensus_aura::{
 	build_aura_consensus, BuildAuraConsensusParams, SlotProportion,
 };
@@ -25,9 +27,9 @@ use cumulus_client_service::{
 };
 use cumulus_primitives_core::ParaId;
 use polkadot_primitives::v1::CollatorPair;
-
 use sc_client_api::ExecutorProvider;
 use sc_executor::native_executor_instance;
+pub use sc_executor::NativeExecutor;
 use sc_network::NetworkService;
 use sc_service::{Configuration, PartialComponents, Role, TFullBackend, TFullClient, TaskManager};
 use sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker, TelemetryWorkerHandle};
@@ -35,10 +37,7 @@ use sp_api::ConstructRuntimeApi;
 use sp_consensus::SlotData;
 use sp_keystore::SyncCryptoStorePtr;
 use sp_runtime::traits::BlakeTwo256;
-use std::sync::Arc;
 use substrate_prometheus_endpoint::Registry;
-
-pub use sc_executor::NativeExecutor;
 
 type BlockNumber = u32;
 type Header = sp_runtime::generic::Header<BlockNumber, sp_runtime::traits::BlakeTwo256>;
@@ -370,9 +369,10 @@ pub async fn start_parachain_node(
 	collator_key: CollatorPair,
 	polkadot_config: Configuration,
 	id: ParaId,
-) -> sc_service::error::Result<
-	(TaskManager, Arc<TFullClient<Block, parachain_runtime::RuntimeApi, ParachainRuntimeExecutor>>)
-> {
+) -> sc_service::error::Result<(
+	TaskManager,
+	Arc<TFullClient<Block, parachain_runtime::RuntimeApi, ParachainRuntimeExecutor>>,
+)> {
 	start_node_impl::<parachain_runtime::RuntimeApi, ParachainRuntimeExecutor, _, _, _>(
 		parachain_config,
 		collator_key,

@@ -17,16 +17,11 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use codec::{Encode, Decode};
-use frame_support::{
-	dispatch::PostDispatchInfo,
-	weights::GetDispatchInfo,
-	traits::Currency,
-};
+use codec::{Decode, Encode};
+use frame_support::{dispatch::PostDispatchInfo, traits::Currency, weights::GetDispatchInfo};
+pub use pallet::*;
 use sp_runtime::{traits::Dispatchable, RuntimeDebug};
 use sp_std::prelude::*;
-
-pub use pallet::*;
 
 #[cfg(test)]
 mod mock;
@@ -44,16 +39,16 @@ pub struct DomainInfo<AccountId, Balance> {
 
 #[frame_support::pallet]
 pub mod pallet {
-	use frame_support::pallet_prelude::*;
+	use frame_support::{pallet_prelude::*, traits::ReservableCurrency};
 	use frame_system::pallet_prelude::*;
-	use frame_support::traits::ReservableCurrency;
+
 	use super::*;
 
-	type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+	type BalanceOf<T> =
+		<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-
 		#[pallet::constant]
 		/// The deposit to be paid to register a domain.
 		type DomainDeposit: Get<BalanceOf<Self>>;
@@ -69,7 +64,9 @@ pub mod pallet {
 		type Currency: ReservableCurrency<Self::AccountId>;
 
 		/// The overarching call type.
-		type Call: Parameter + Dispatchable<Origin=Self::Origin, PostInfo=PostDispatchInfo> + GetDispatchInfo;
+		type Call: Parameter
+			+ Dispatchable<Origin = Self::Origin, PostInfo = PostDispatchInfo>
+			+ GetDispatchInfo;
 	}
 
 	#[pallet::pallet]
@@ -78,11 +75,18 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn domains)]
-	pub(super) type Domains<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, Vec<u8>, ValueQuery>;
+	pub(super) type Domains<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn domain_addresses)]
-	pub(super) type DomainInfos<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, DomainInfo<T::AccountId, BalanceOf<T>>, ValueQuery>;
+	pub(super) type DomainInfos<T: Config> = StorageMap<
+		_,
+		Blake2_128Concat,
+		Vec<u8>,
+		DomainInfo<T::AccountId, BalanceOf<T>>,
+		ValueQuery,
+	>;
 
 	#[pallet::event]
 	#[pallet::metadata(T::AccountId = "AccountId", BalanceOf<T> = "Balance")]
@@ -103,7 +107,7 @@ pub mod pallet {
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
 
 	#[pallet::call]
-	impl<T:Config> Pallet<T> {
+	impl<T: Config> Pallet<T> {
 		#[pallet::weight(0)]
 		pub(super) fn register(
 			origin: OriginFor<T>,
@@ -113,15 +117,16 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
 
-			ensure!(domain.len() <= T::MaxDomainLen::get() as usize, Error::<T>::InvalidDomainLength);
+			ensure!(
+				domain.len() <= T::MaxDomainLen::get() as usize,
+				Error::<T>::InvalidDomainLength
+			);
 			let deposit = T::DomainDeposit::get();
 			T::Currency::reserve(&who, deposit)?;
-			<DomainInfos<T>>::insert(&domain, DomainInfo {
-				native: who.clone(),
-				relay,
-				ethereum: ethereum.clone(),
-				deposit,
-			});
+			<DomainInfos<T>>::insert(
+				&domain,
+				DomainInfo { native: who.clone(), relay, ethereum: ethereum.clone(), deposit },
+			);
 			<Domains<T>>::insert(&who, &domain);
 
 			Self::deposit_event(Event::DomainRegistered(who, domain, ethereum, deposit));
@@ -157,7 +162,8 @@ pub mod pallet {
 			let domain = <Domains<T>>::get(&target);
 
 			call.dispatch(frame_system::RawOrigin::Signed(who.clone()).into())
-				.map(|_| ()).map_err(|e| e.error)?;
+				.map(|_| ())
+				.map_err(|e| e.error)?;
 
 			Self::deposit_event(Event::Sent(who, domain));
 

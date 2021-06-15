@@ -17,16 +17,14 @@
 
 #![cfg(feature = "runtime-benchmarks")]
 
-use sp_std::prelude::*;
-use sp_std::vec;
-
 use frame_benchmarking::{account, benchmarks};
 use frame_support::{traits::Get, weights::DispatchClass};
 use frame_system::RawOrigin;
+use primitives::Balance;
 use sp_runtime::traits::{AccountIdConversion, StaticLookup, UniqueSaturatedInto};
+use sp_std::{prelude::*, vec};
 
 pub use crate::*;
-use primitives::Balance;
 
 pub struct Module<T: Config>(crate::Pallet<T>);
 
@@ -126,9 +124,6 @@ benchmarks! {
 
 #[cfg(test)]
 mod mock {
-	use super::*;
-	use crate as nft;
-
 	use codec::{Decode, Encode};
 	use frame_support::{
 		parameter_types,
@@ -143,6 +138,9 @@ mod mock {
 		Perbill,
 	};
 
+	use super::*;
+	use crate as nft;
+
 	parameter_types! {
 		pub const BlockHashCount: u64 = 250;
 		pub const MaximumBlockWeight: Weight = 1024;
@@ -153,45 +151,45 @@ mod mock {
 	pub type AccountId = AccountId32;
 
 	impl frame_system::Config for Runtime {
-		type BaseCallFilter = BaseFilter;
-		type Origin = Origin;
-		type Index = u64;
-		type BlockNumber = u64;
-		type Hash = H256;
-		type Call = Call;
-		type Hashing = BlakeTwo256;
-		type AccountId = AccountId;
-		type Lookup = IdentityLookup<Self::AccountId>;
-		type Header = Header;
-		type Event = ();
-		type BlockHashCount = BlockHashCount;
-		type BlockWeights = ();
-		type BlockLength = ();
-		type DbWeight = ();
-		type Version = ();
-		type PalletInfo = PalletInfo;
 		type AccountData = pallet_balances::AccountData<Balance>;
-		type OnNewAccount = ();
+		type AccountId = AccountId;
+		type BaseCallFilter = BaseFilter;
+		type BlockHashCount = BlockHashCount;
+		type BlockLength = ();
+		type BlockNumber = u64;
+		type BlockWeights = ();
+		type Call = Call;
+		type DbWeight = ();
+		type Event = ();
+		type Hash = H256;
+		type Hashing = BlakeTwo256;
+		type Header = Header;
+		type Index = u64;
+		type Lookup = IdentityLookup<Self::AccountId>;
 		type OnKilledAccount = ();
-		type SystemWeightInfo = ();
-		type SS58Prefix = ();
+		type OnNewAccount = ();
 		type OnSetCode = ();
+		type Origin = Origin;
+		type PalletInfo = PalletInfo;
+		type SS58Prefix = ();
+		type SystemWeightInfo = ();
+		type Version = ();
 	}
 	parameter_types! {
 		pub const ExistentialDeposit: u64 = 1;
 	}
 	impl pallet_balances::Config for Runtime {
-		type Balance = Balance;
-		type Event = ();
-		type DustRemoval = ();
-		type ExistentialDeposit = ExistentialDeposit;
 		type AccountStore = frame_system::Pallet<Runtime>;
+		type Balance = Balance;
+		type DustRemoval = ();
+		type Event = ();
+		type ExistentialDeposit = ExistentialDeposit;
 		type MaxLocks = ();
 		type WeightInfo = ();
 	}
 	impl pallet_utility::Config for Runtime {
-		type Event = ();
 		type Call = Call;
+		type Event = ();
 		type WeightInfo = ();
 	}
 	parameter_types! {
@@ -217,10 +215,13 @@ mod mock {
 		fn filter(&self, c: &Call) -> bool {
 			match self {
 				ProxyType::Any => true,
-				ProxyType::JustTransfer => matches!(c, Call::Balances(pallet_balances::Call::transfer(..))),
+				ProxyType::JustTransfer => {
+					matches!(c, Call::Balances(pallet_balances::Call::transfer(..)))
+				}
 				ProxyType::JustUtility => matches!(c, Call::Utility(..)),
 			}
 		}
+
 		fn is_superset(&self, o: &Self) -> bool {
 			self == &ProxyType::Any || self == o
 		}
@@ -237,18 +238,18 @@ mod mock {
 		}
 	}
 	impl pallet_proxy::Config for Runtime {
-		type Event = ();
-		type Call = Call;
-		type Currency = Balances;
-		type ProxyType = ProxyType;
-		type ProxyDepositBase = ProxyDepositBase;
-		type ProxyDepositFactor = ProxyDepositFactor;
-		type MaxProxies = MaxProxies;
-		type WeightInfo = ();
-		type CallHasher = BlakeTwo256;
-		type MaxPending = MaxPending;
 		type AnnouncementDepositBase = AnnouncementDepositBase;
 		type AnnouncementDepositFactor = AnnouncementDepositFactor;
+		type Call = Call;
+		type CallHasher = BlakeTwo256;
+		type Currency = Balances;
+		type Event = ();
+		type MaxPending = MaxPending;
+		type MaxProxies = MaxProxies;
+		type ProxyDepositBase = ProxyDepositBase;
+		type ProxyDepositFactor = ProxyDepositFactor;
+		type ProxyType = ProxyType;
+		type WeightInfo = ();
 	}
 
 	parameter_types! {
@@ -257,18 +258,18 @@ mod mock {
 		pub const NftPalletId: PalletId = PalletId(*b"aca/aNFT");
 	}
 	impl crate::Config for Runtime {
-		type Event = ();
 		type CreateClassDeposit = CreateClassDeposit;
 		type CreateTokenDeposit = CreateTokenDeposit;
+		type Event = ();
 		type PalletId = NftPalletId;
 		type WeightInfo = ();
 	}
 
 	impl orml_nft::Config for Runtime {
-		type ClassId = u32;
-		type TokenId = u64;
 		type ClassData = ClassData<Balance>;
+		type ClassId = u32;
 		type TokenData = TokenData<Balance>;
+		type TokenId = u64;
 	}
 
 	type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
@@ -292,9 +293,7 @@ mod mock {
 	use frame_system::Call as SystemCall;
 
 	pub fn new_test_ext() -> sp_io::TestExternalities {
-		let t = frame_system::GenesisConfig::default()
-			.build_storage::<Runtime>()
-			.unwrap();
+		let t = frame_system::GenesisConfig::default().build_storage::<Runtime>().unwrap();
 
 		let mut ext = sp_io::TestExternalities::new(t);
 		ext.execute_with(|| System::set_block_number(1));
@@ -304,9 +303,10 @@ mod mock {
 
 #[cfg(test)]
 mod tests {
-	use super::*;
 	use frame_support::assert_ok;
 	use mock::{new_test_ext, Runtime};
+
+	use super::*;
 
 	#[test]
 	fn test_create_class() {
