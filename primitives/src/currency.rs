@@ -18,14 +18,13 @@
 // use crate::evm::EvmAddress;
 use bstringify::bstringify;
 use codec::{Decode, Encode};
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
 use sp_runtime::RuntimeDebug;
 use sp_std::{
 	convert::{Into, TryFrom, TryInto},
 	prelude::*,
 };
-
-#[cfg(feature = "std")]
-use serde::{Deserialize, Serialize};
 
 macro_rules! create_currency_id {
     ($(#[$meta:meta])*
@@ -150,7 +149,9 @@ pub enum CurrencyId {
 }
 
 impl Default for CurrencyId {
-    fn default() -> Self { CurrencyId::Token(TokenSymbol::NAME) }
+	fn default() -> Self {
+		CurrencyId::Token(TokenSymbol::NAME)
+	}
 }
 
 impl CurrencyId {

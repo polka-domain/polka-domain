@@ -17,21 +17,15 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use codec::{Encode, Decode};
+use codec::{Decode, Encode};
 use frame_support::RuntimeDebug;
+use orml_traits::{MultiCurrency, MultiReservableCurrency};
+pub use pallet::*;
 use sp_runtime::traits::{AtLeast32BitUnsigned, Saturating, Zero};
 use sp_std::prelude::*;
-use orml_traits::{MultiCurrency, MultiReservableCurrency};
-
-pub use pallet::*;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default)]
-pub struct PoolDetails<
-	AccountId,
-	Balance,
-	BlockNumber,
-	TokenId,
-> {
+pub struct PoolDetails<AccountId, Balance, BlockNumber, TokenId> {
 	name: Vec<u8>,
 	creator: AccountId,
 	token0: TokenId,
@@ -48,6 +42,7 @@ pub struct PoolDetails<
 pub mod pallet {
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
+
 	use super::*;
 
 	#[pallet::config]
@@ -56,7 +51,12 @@ pub mod pallet {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
 		/// The units in which we record balances.
-		type Balance: Member + Parameter + AtLeast32BitUnsigned + Default + Copy + MaybeSerializeDeserialize;
+		type Balance: Member
+			+ Parameter
+			+ AtLeast32BitUnsigned
+			+ Default
+			+ Copy
+			+ MaybeSerializeDeserialize;
 
 		/// The arithmetic type of pool identifier.
 		type PoolId: Member + Parameter + AtLeast32BitUnsigned + Default + Copy;
@@ -83,9 +83,10 @@ pub mod pallet {
 	#[pallet::getter(fn pools)]
 	pub(super) type Pool<T: Config> = StorageMap<
 		_,
-		Blake2_128Concat, T::PoolId,
+		Blake2_128Concat,
+		T::PoolId,
 		PoolDetails<T::AccountId, T::Balance, T::BlockNumber, T::TokenId>,
-		ValueQuery
+		ValueQuery,
 	>;
 
 	/// Swap records by a pool and an account.
@@ -93,10 +94,12 @@ pub mod pallet {
 	#[pallet::getter(fn swaps)]
 	pub(super) type Swap<T: Config> = StorageDoubleMap<
 		_,
-		Blake2_128Concat, T::PoolId,
-		Blake2_128Concat, T::AccountId,
+		Blake2_128Concat,
+		T::PoolId,
+		Blake2_128Concat,
+		T::AccountId,
 		(T::Balance, T::Balance),
-		ValueQuery
+		ValueQuery,
 	>;
 
 	/// The end block number of a pool
@@ -104,10 +107,12 @@ pub mod pallet {
 	#[pallet::getter(fn pool_end_at)]
 	pub(super) type PoolEndAt<T: Config> = StorageDoubleMap<
 		_,
-		Twox64Concat, T::BlockNumber,
-		Twox64Concat, T::PoolId,
+		Twox64Concat,
+		T::BlockNumber,
+		Twox64Concat,
+		T::PoolId,
 		Option<()>,
-		ValueQuery
+		ValueQuery,
 	>;
 
 	#[pallet::event]
@@ -126,8 +131,7 @@ pub mod pallet {
 	}
 
 	#[pallet::call]
-	impl<T:Config> Pallet<T> {
-
+	impl<T: Config> Pallet<T> {
 		#[pallet::weight(0)]
 		pub(super) fn create(
 			origin: OriginFor<T>,
@@ -147,18 +151,21 @@ pub mod pallet {
 
 			T::Currency::reserve(token0, &creator, total0)?;
 
-			Pool::<T>::insert(pool_id, PoolDetails {
-				name,
-				creator: creator.clone(),
-				token0,
-				token1,
-				total0,
-				total1,
-				swapped0: Zero::zero(),
-				swapped1: Zero::zero(),
-				duration,
-				start_at,
-			});
+			Pool::<T>::insert(
+				pool_id,
+				PoolDetails {
+					name,
+					creator: creator.clone(),
+					token0,
+					token1,
+					total0,
+					total1,
+					swapped0: Zero::zero(),
+					swapped1: Zero::zero(),
+					duration,
+					start_at,
+				},
+			);
 			PoolEndAt::<T>::insert(end_at, pool_id, Some(()));
 			NextPoolId::<T>::put(pool_id.saturating_add(1u32.into()));
 
