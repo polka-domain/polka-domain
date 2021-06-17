@@ -39,10 +39,17 @@ fn load_spec(
 	id: &str,
 	para_id: ParaId,
 ) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
-	match id {
-		"staging" => Ok(Box::new(chain_spec::staging_test_net(para_id))),
-		_ => Ok(Box::new(chain_spec::get_chain_spec(para_id))),
-	}
+	Ok(match id {
+		"dev" => Box::new(chain_spec::development_config(para_id)),
+		"local" => Box::new(chain_spec::local_testnet_config(para_id)),
+		"polka-domain-genesis" | "" => Box::new(chain_spec::genesis_config(para_id)),
+		"polka-domain" => Box::new(chain_spec::ChainSpec::from_json_bytes(
+			&include_bytes!("../res/polka-domain.json")[..],
+		)?),
+		path => Box::new(chain_spec::ChainSpec::from_json_file(
+			std::path::PathBuf::from(path),
+		)?),
+	})
 }
 
 impl SubstrateCli for Cli {
