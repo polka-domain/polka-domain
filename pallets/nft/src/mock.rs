@@ -17,9 +17,6 @@
 
 #![cfg(test)]
 
-use super::*;
-
-use crate as nft;
 use codec::{Decode, Encode};
 use frame_support::{
 	construct_runtime, parameter_types,
@@ -34,53 +31,55 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
 };
 
+use super::*;
+use crate as nft;
+
 parameter_types! {
 	pub const BlockHashCount: u64 = 250;
 }
 
 pub type AccountId = AccountId32;
 
-
 impl frame_system::Config for Runtime {
-	type BaseCallFilter = BaseFilter;
-	type Origin = Origin;
-	type Index = u64;
-	type BlockNumber = u64;
-	type Hash = H256;
-	type Call = Call;
-	type Hashing = BlakeTwo256;
-	type AccountId = AccountId;
-	type Lookup = IdentityLookup<Self::AccountId>;
-	type Header = Header;
-	type Event = Event;
-	type BlockHashCount = BlockHashCount;
-	type DbWeight = ();
-	type BlockWeights = ();
-	type BlockLength = ();
-	type Version = ();
-	type PalletInfo = PalletInfo;
 	type AccountData = pallet_balances::AccountData<Balance>;
-	type OnNewAccount = ();
+	type AccountId = AccountId;
+	type BaseCallFilter = BaseFilter;
+	type BlockHashCount = BlockHashCount;
+	type BlockLength = ();
+	type BlockNumber = u64;
+	type BlockWeights = ();
+	type Call = Call;
+	type DbWeight = ();
+	type Event = Event;
+	type Hash = H256;
+	type Hashing = BlakeTwo256;
+	type Header = Header;
+	type Index = u64;
+	type Lookup = IdentityLookup<Self::AccountId>;
 	type OnKilledAccount = ();
-	type SystemWeightInfo = ();
-	type SS58Prefix = ();
+	type OnNewAccount = ();
 	type OnSetCode = ();
+	type Origin = Origin;
+	type PalletInfo = PalletInfo;
+	type SS58Prefix = ();
+	type SystemWeightInfo = ();
+	type Version = ();
 }
 parameter_types! {
 	pub const ExistentialDeposit: u64 = 1;
 }
 impl pallet_balances::Config for Runtime {
-	type Balance = Balance;
-	type Event = Event;
-	type DustRemoval = ();
-	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = frame_system::Pallet<Runtime>;
+	type Balance = Balance;
+	type DustRemoval = ();
+	type Event = Event;
+	type ExistentialDeposit = ExistentialDeposit;
 	type MaxLocks = ();
 	type WeightInfo = ();
 }
 impl pallet_utility::Config for Runtime {
-	type Event = Event;
 	type Call = Call;
+	type Event = Event;
 	type WeightInfo = ();
 }
 parameter_types! {
@@ -106,10 +105,13 @@ impl InstanceFilter<Call> for ProxyType {
 	fn filter(&self, c: &Call) -> bool {
 		match self {
 			ProxyType::Any => true,
-			ProxyType::JustTransfer => matches!(c, Call::Balances(pallet_balances::Call::transfer(..))),
+			ProxyType::JustTransfer => {
+				matches!(c, Call::Balances(pallet_balances::Call::transfer(..)))
+			}
 			ProxyType::JustUtility => matches!(c, Call::Utility(..)),
 		}
 	}
+
 	fn is_superset(&self, o: &Self) -> bool {
 		self == &ProxyType::Any || self == o
 	}
@@ -126,21 +128,22 @@ impl Filter<Call> for BaseFilter {
 	}
 }
 impl pallet_proxy::Config for Runtime {
-	type Event = Event;
-	type Call = Call;
-	type Currency = Balances;
-	type ProxyType = ProxyType;
-	type ProxyDepositBase = ProxyDepositBase;
-	type ProxyDepositFactor = ProxyDepositFactor;
-	type MaxProxies = MaxProxies;
-	type WeightInfo = ();
-	type CallHasher = BlakeTwo256;
-	type MaxPending = MaxPending;
 	type AnnouncementDepositBase = AnnouncementDepositBase;
 	type AnnouncementDepositFactor = AnnouncementDepositFactor;
+	type Call = Call;
+	type CallHasher = BlakeTwo256;
+	type Currency = Balances;
+	type Event = Event;
+	type MaxPending = MaxPending;
+	type MaxProxies = MaxProxies;
+	type ProxyDepositBase = ProxyDepositBase;
+	type ProxyDepositFactor = ProxyDepositFactor;
+	type ProxyType = ProxyType;
+	type WeightInfo = ();
 }
 
-pub type NativeCurrency = orml_currencies::BasicCurrencyAdapter<Runtime, Balances, Amount, BlockNumber>;
+pub type NativeCurrency =
+	orml_currencies::BasicCurrencyAdapter<Runtime, Balances, Amount, BlockNumber>;
 
 parameter_type_with_key! {
 	pub ExistentialDeposits: |_currency_id: CurrencyId| -> Balance {
@@ -149,14 +152,14 @@ parameter_type_with_key! {
 }
 
 impl orml_tokens::Config for Runtime {
-	type Event = Event;
-	type Balance = Balance;
 	type Amount = Amount;
+	type Balance = Balance;
 	type CurrencyId = CurrencyId;
-	type WeightInfo = ();
+	type Event = Event;
 	type ExistentialDeposits = ExistentialDeposits;
-	type OnDust = ();
 	type MaxLocks = ();
+	type OnDust = ();
+	type WeightInfo = ();
 }
 
 pub const NATIVE_CURRENCY_ID: CurrencyId = CurrencyId::Token(TokenSymbol::NAME);
@@ -167,12 +170,12 @@ parameter_types! {
 
 impl orml_currencies::Config for Runtime {
 	type Event = Event;
+	type GetNativeCurrencyId = GetNativeCurrencyId;
 	type MultiCurrency = Tokens;
 	type NativeCurrency = NativeCurrency;
-	type GetNativeCurrencyId = GetNativeCurrencyId;
 	type WeightInfo = ();
-	//type AddressMapping = MockAddressMapping;
-	//type EVMBridge = ();
+	// type AddressMapping = MockAddressMapping;
+	// type EVMBridge = ();
 }
 
 parameter_types! {
@@ -181,9 +184,9 @@ parameter_types! {
 	pub const NftPalletId: PalletId = PalletId(*b"aca/aNFT");
 }
 impl Config for Runtime {
-	type Event = Event;
 	type CreateClassDeposit = CreateClassDeposit;
 	type CreateTokenDeposit = CreateTokenDeposit;
+	type Event = Event;
 	type PalletId = NftPalletId;
 	type WeightInfo = ();
 }
@@ -194,12 +197,12 @@ parameter_types! {
 }
 
 impl orml_nft::Config for Runtime {
-	type ClassId = u32;
-	type TokenId = u64;
 	type ClassData = ClassData<Balance>;
-	type TokenData = TokenData<Balance>;
+	type ClassId = u32;
 	type MaxClassMetadata = MaxClassMetadata;
 	type MaxTokenMetadata = MaxTokenMetadata;
+	type TokenData = TokenData<Balance>;
+	type TokenId = u64;
 }
 
 use frame_system::Call as SystemCall;
@@ -240,15 +243,11 @@ impl Default for ExtBuilder {
 
 impl ExtBuilder {
 	pub fn build(self) -> sp_io::TestExternalities {
-		let mut t = frame_system::GenesisConfig::default()
-			.build_storage::<Runtime>()
-			.unwrap();
+		let mut t = frame_system::GenesisConfig::default().build_storage::<Runtime>().unwrap();
 
-		pallet_balances::GenesisConfig::<Runtime> {
-			balances: vec![(ALICE, 100000)],
-		}
-		.assimilate_storage(&mut t)
-		.unwrap();
+		pallet_balances::GenesisConfig::<Runtime> { balances: vec![(ALICE, 100000)] }
+			.assimilate_storage(&mut t)
+			.unwrap();
 
 		let mut ext = sp_io::TestExternalities::new(t);
 		ext.execute_with(|| System::set_block_number(1));
@@ -257,8 +256,5 @@ impl ExtBuilder {
 }
 
 pub fn last_event() -> Event {
-	frame_system::Pallet::<Runtime>::events()
-		.pop()
-		.expect("Event expected")
-		.event
+	frame_system::Pallet::<Runtime>::events().pop().expect("Event expected").event
 }

@@ -23,52 +23,49 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use sp_api::impl_runtime_apis;
-use sp_core::OpaqueMetadata;
-use sp_runtime::{
-	create_runtime_str, generic, impl_opaque_keys,
-	traits::{BlakeTwo256, Block as BlockT, AccountIdLookup},
-	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult,
-};
-use sp_std::prelude::*;
-#[cfg(feature = "std")]
-use sp_version::NativeVersion;
-use sp_version::RuntimeVersion;
-
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
-	construct_runtime, parameter_types, match_type,
-	traits::{Randomness, IsInVec, All},
+	construct_runtime, match_type, parameter_types,
+	traits::{All, IsInVec, Randomness},
 	weights::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
 		DispatchClass, IdentityFee, Weight,
 	},
-	StorageValue, PalletId,
+	PalletId, StorageValue,
 };
 use frame_system::limits::{BlockLength, BlockWeights};
+use orml_traits::parameter_type_with_key;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_timestamp::Call as TimestampCall;
-#[cfg(any(feature = "std", test))]
-pub use sp_runtime::BuildStorage;
-pub use sp_runtime::{Perbill, Permill};
-pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
-
+use pallet_xcm::XcmPassthrough;
 // XCM imports
 use polkadot_parachain::primitives::Sibling;
-use xcm::v0::{MultiAsset, MultiLocation, MultiLocation::*, Junction::*, BodyId, NetworkId};
+pub use primitives::{Amount, AuctionId, CurrencyId, TokenSymbol};
+use sp_api::impl_runtime_apis;
+pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
+use sp_core::OpaqueMetadata;
+#[cfg(any(feature = "std", test))]
+pub use sp_runtime::BuildStorage;
+use sp_runtime::{
+	create_runtime_str, generic, impl_opaque_keys,
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT},
+	transaction_validity::{TransactionSource, TransactionValidity},
+	ApplyExtrinsicResult,
+};
+pub use sp_runtime::{Perbill, Permill};
+use sp_std::prelude::*;
+#[cfg(feature = "std")]
+use sp_version::NativeVersion;
+use sp_version::RuntimeVersion;
+use xcm::v0::{BodyId, Junction::*, MultiAsset, MultiLocation, MultiLocation::*, NetworkId, Xcm};
 use xcm_builder::{
-	AccountId32Aliases, CurrencyAdapter, LocationInverter, ParentIsDefault, RelayChainAsNative,
-	SiblingParachainAsNative, SiblingParachainConvertsVia, SignedAccountId32AsNative,
-	SovereignSignedViaLocation, EnsureXcmOrigin, AllowUnpaidExecutionFrom, ParentAsSuperuser,
-	AllowTopLevelPaidExecutionFrom, TakeWeightCredit, FixedWeightBounds, IsConcrete, NativeAsset,
-	UsingComponents, SignedToAccountId32,
+	AccountId32Aliases, AllowTopLevelPaidExecutionFrom, AllowUnpaidExecutionFrom, CurrencyAdapter,
+	EnsureXcmOrigin, FixedWeightBounds, IsConcrete, LocationInverter, NativeAsset,
+	ParentAsSuperuser, ParentIsDefault, RelayChainAsNative, SiblingParachainAsNative,
+	SiblingParachainConvertsVia, SignedAccountId32AsNative, SignedToAccountId32,
+	SovereignSignedViaLocation, TakeWeightCredit, UsingComponents,
 };
 use xcm_executor::{Config, XcmExecutor};
-use pallet_xcm::XcmPassthrough;
-use xcm::v0::Xcm;
-pub use primitives::{AuctionId, CurrencyId, TokenSymbol, Amount};
-use orml_traits::{parameter_type_with_key};
 
 pub type SessionHandlers = ();
 
@@ -111,10 +108,7 @@ pub const PRIMARY_PROBABILITY: (u64, u64) = (1, 4);
 /// The version information used to identify this runtime when compiled natively.
 #[cfg(feature = "std")]
 pub fn native_version() -> NativeVersion {
-	NativeVersion {
-		runtime_version: VERSION,
-		can_author_with: Default::default(),
-	}
+	NativeVersion { runtime_version: VERSION, can_author_with: Default::default() }
 }
 
 /// We assume that ~10% of the block weight is consumed by `on_initalize` handlers.
@@ -153,42 +147,42 @@ parameter_types! {
 }
 
 impl frame_system::Config for Runtime {
+	type AccountData = pallet_balances::AccountData<Balance>;
 	/// The identifier used to distinguish between accounts.
 	type AccountId = AccountId;
-	/// The aggregated dispatch type that is available for extrinsics.
-	type Call = Call;
-	/// The lookup mechanism to get account ID from whatever is passed in dispatchers.
-	type Lookup = AccountIdLookup<AccountId, ()>;
-	/// The index type for storing how many extrinsics an account has signed.
-	type Index = Index;
+	type BaseCallFilter = ();
+	/// Maximum number of block number to block hash mappings to keep (oldest pruned first).
+	type BlockHashCount = BlockHashCount;
+	type BlockLength = RuntimeBlockLength;
 	/// The index type for blocks.
 	type BlockNumber = BlockNumber;
+	type BlockWeights = RuntimeBlockWeights;
+	/// The aggregated dispatch type that is available for extrinsics.
+	type Call = Call;
+	type DbWeight = ();
+	/// The ubiquitous event type.
+	type Event = Event;
 	/// The type for hashing blocks and tries.
 	type Hash = Hash;
 	/// The hashing algorithm used.
 	type Hashing = BlakeTwo256;
 	/// The header type.
 	type Header = generic::Header<BlockNumber, BlakeTwo256>;
-	/// The ubiquitous event type.
-	type Event = Event;
+	/// The index type for storing how many extrinsics an account has signed.
+	type Index = Index;
+	/// The lookup mechanism to get account ID from whatever is passed in dispatchers.
+	type Lookup = AccountIdLookup<AccountId, ()>;
+	type OnKilledAccount = ();
+	type OnNewAccount = ();
+	type OnSetCode = cumulus_pallet_parachain_system::ParachainSetCode<Self>;
 	/// The ubiquitous origin type.
 	type Origin = Origin;
-	/// Maximum number of block number to block hash mappings to keep (oldest pruned first).
-	type BlockHashCount = BlockHashCount;
-	/// Runtime version.
-	type Version = Version;
 	/// Converts a module to an index of this module in the runtime.
 	type PalletInfo = PalletInfo;
-	type AccountData = pallet_balances::AccountData<Balance>;
-	type OnNewAccount = ();
-	type OnKilledAccount = ();
-	type DbWeight = ();
-	type BaseCallFilter = ();
-	type SystemWeightInfo = ();
-	type BlockWeights = RuntimeBlockWeights;
-	type BlockLength = RuntimeBlockLength;
 	type SS58Prefix = SS58Prefix;
-	type OnSetCode = cumulus_pallet_parachain_system::ParachainSetCode<Self>;
+	type SystemWeightInfo = ();
+	/// Runtime version.
+	type Version = Version;
 }
 
 parameter_types! {
@@ -196,10 +190,10 @@ parameter_types! {
 }
 
 impl pallet_timestamp::Config for Runtime {
+	type MinimumPeriod = MinimumPeriod;
 	/// A timestamp: milliseconds since the unix epoch.
 	type Moment = u64;
 	type OnTimestampSet = ();
-	type MinimumPeriod = MinimumPeriod;
 	type WeightInfo = ();
 }
 
@@ -212,22 +206,22 @@ parameter_types! {
 }
 
 impl pallet_balances::Config for Runtime {
+	type AccountStore = System;
 	/// The type for recording an account's balance.
 	type Balance = Balance;
+	type DustRemoval = ();
 	/// The ubiquitous event type.
 	type Event = Event;
-	type DustRemoval = ();
 	type ExistentialDeposit = ExistentialDeposit;
-	type AccountStore = System;
-	type WeightInfo = ();
 	type MaxLocks = MaxLocks;
+	type WeightInfo = ();
 }
 
 impl pallet_transaction_payment::Config for Runtime {
+	type FeeMultiplierUpdate = ();
 	type OnChargeTransaction = pallet_transaction_payment::CurrencyAdapter<Balances, ()>;
 	type TransactionByteFee = TransactionByteFee;
 	type WeightToFee = IdentityFee<Balance>;
-	type FeeMultiplierUpdate = ();
 }
 
 impl pallet_sudo::Config for Runtime {
@@ -241,14 +235,14 @@ parameter_types! {
 }
 
 impl cumulus_pallet_parachain_system::Config for Runtime {
+	type DmpMessageHandler = DmpQueue;
 	type Event = Event;
 	type OnValidationData = ();
-	type SelfParaId = parachain_info::Pallet<Runtime>;
 	type OutboundXcmpMessageSource = XcmpQueue;
-	type DmpMessageHandler = DmpQueue;
 	type ReservedDmpWeight = ReservedDmpWeight;
-	type XcmpMessageHandler = XcmpQueue;
 	type ReservedXcmpWeight = ReservedXcmpWeight;
+	type SelfParaId = parachain_info::Pallet<Runtime>;
+	type XcmpMessageHandler = XcmpQueue;
 }
 
 impl parachain_info::Config for Runtime {}
@@ -334,24 +328,23 @@ pub type Barrier = (
 
 pub struct XcmConfig;
 impl Config for XcmConfig {
-	type Call = Call;
-	type XcmSender = XcmRouter;
 	// How to withdraw and deposit an asset.
 	type AssetTransactor = LocalAssetTransactor;
-	type OriginConverter = XcmOriginToTransactDispatchOrigin;
-	type IsReserve = NativeAsset;
-	type IsTeleporter = NativeAsset;	// <- should be enough to allow teleportation of NAME
-	type LocationInverter = LocationInverter<Ancestry>;
 	type Barrier = Barrier;
-	type Weigher = FixedWeightBounds<UnitWeightCost, Call>;
+	type Call = Call;
+	type IsReserve = NativeAsset;
+	type IsTeleporter = NativeAsset;
+	// <- should be enough to allow teleportation of NAME
+	type LocationInverter = LocationInverter<Ancestry>;
+	type OriginConverter = XcmOriginToTransactDispatchOrigin;
+	type ResponseHandler = ();
 	type Trader = UsingComponents<IdentityFee<Balance>, RocLocation, AccountId, Balances, ()>;
-	type ResponseHandler = ();	// Don't handle responses for now.
+	type Weigher = FixedWeightBounds<UnitWeightCost, Call>;
+	type XcmSender = XcmRouter; // Don't handle responses for now.
 }
 
 /// No local origins on this chain are allowed to dispatch XCM sends/executions.
-pub type LocalOriginToLocation = (
-	SignedToAccountId32<Origin, AccountId, RococoNetwork>,
-);
+pub type LocalOriginToLocation = (SignedToAccountId32<Origin, AccountId, RococoNetwork>,);
 
 /// The means for routing XCM messages which are not for local execution into the right message
 /// queues.
@@ -364,14 +357,14 @@ pub type XcmRouter = (
 
 impl pallet_xcm::Config for Runtime {
 	type Event = Event;
-	type SendXcmOrigin = EnsureXcmOrigin<Origin, LocalOriginToLocation>;
-	type XcmRouter = XcmRouter;
 	type ExecuteXcmOrigin = EnsureXcmOrigin<Origin, LocalOriginToLocation>;
+	type SendXcmOrigin = EnsureXcmOrigin<Origin, LocalOriginToLocation>;
+	type Weigher = FixedWeightBounds<UnitWeightCost, Call>;
 	type XcmExecuteFilter = All<(MultiLocation, Xcm<Call>)>;
 	type XcmExecutor = XcmExecutor<XcmConfig>;
-	type XcmTeleportFilter = All<(MultiLocation, Vec<MultiAsset>)>;
 	type XcmReserveTransferFilter = ();
-	type Weigher = FixedWeightBounds<UnitWeightCost, Call>;
+	type XcmRouter = XcmRouter;
+	type XcmTeleportFilter = All<(MultiLocation, Vec<MultiAsset>)>;
 }
 
 impl cumulus_pallet_xcm::Config for Runtime {
@@ -380,21 +373,21 @@ impl cumulus_pallet_xcm::Config for Runtime {
 }
 
 impl cumulus_pallet_xcmp_queue::Config for Runtime {
+	type ChannelInfo = ParachainSystem;
 	type Event = Event;
 	type XcmExecutor = XcmExecutor<XcmConfig>;
-	type ChannelInfo = ParachainSystem;
 }
 
 impl cumulus_pallet_dmp_queue::Config for Runtime {
 	type Event = Event;
-	type XcmExecutor = XcmExecutor<XcmConfig>;
 	type ExecuteOverweightOrigin = frame_system::EnsureRoot<AccountId>;
+	type XcmExecutor = XcmExecutor<XcmConfig>;
 }
 
 impl cumulus_ping::Config for Runtime {
+	type Call = Call;
 	type Event = Event;
 	type Origin = Origin;
-	type Call = Call;
 	type XcmSender = XcmRouter;
 }
 
@@ -408,11 +401,11 @@ parameter_types! {
 }
 
 impl domain_registrar::Config for Runtime {
-	type DomainDeposit = ();
-	type MaxDomainLen = MaxDomainLen;
-	type Event = Event;
-	type Currency = Balances;
 	type Call = Call;
+	type Currency = Balances;
+	type DomainDeposit = ();
+	type Event = Event;
+	type MaxDomainLen = MaxDomainLen;
 }
 
 parameter_types! {
@@ -422,9 +415,9 @@ parameter_types! {
 }
 
 impl nft::Config for Runtime {
-	type Event = Event;
 	type CreateClassDeposit = CreateClassDeposit;
 	type CreateTokenDeposit = CreateTokenDeposit;
+	type Event = Event;
 	type PalletId = NftPalletId;
 	type WeightInfo = ();
 }
@@ -435,43 +428,44 @@ parameter_types! {
 }
 
 impl orml_nft::Config for Runtime {
-	type ClassId = u32;
-	type TokenId = u64;
 	type ClassData = nft::ClassData<Balance>;
-	type TokenData = nft::TokenData<Balance>;
+	type ClassId = u32;
 	type MaxClassMetadata = MaxClassMetadata;
 	type MaxTokenMetadata = MaxTokenMetadata;
+	type TokenData = nft::TokenData<Balance>;
+	type TokenId = u64;
 }
 
 impl order::Config for Runtime {
-	type Event = Event;
-	type OrderId = u32;
 	type Balance = Balance;
-	type ClassId = u32;
-	type TokenId = u64;
 	type ClassData = nft::ClassData<Balance>;
-	type TokenData = nft::TokenData<Balance>;
+	type ClassId = u32;
 	type Currency = Currency;
+	type Event = Event;
 	type NFT = NFT;
+	type OrderId = u32;
+	type TokenData = nft::TokenData<Balance>;
+	type TokenId = u64;
 }
 
 parameter_types! {
 	pub const MaxAuction: u32 = 100;
 }
 impl auction::Config for Runtime {
-	type Event = Event;
 	type AuctionId = AuctionId;
 	type Balance = Balance;
-	type ClassId = u32;
-	type TokenId = u64;
 	type ClassData = nft::ClassData<Balance>;
-	type TokenData = nft::TokenData<Balance>;
+	type ClassId = u32;
 	type Currency = Currency;
-	type NFT = NFT;
+	type Event = Event;
 	type MaxAuction = MaxAuction;
+	type NFT = NFT;
+	type TokenData = nft::TokenData<Balance>;
+	type TokenId = u64;
 }
 
-pub type NativeCurrency = orml_currencies::BasicCurrencyAdapter<Runtime, Balances, Amount, BlockNumber>;
+pub type NativeCurrency =
+	orml_currencies::BasicCurrencyAdapter<Runtime, Balances, Amount, BlockNumber>;
 
 parameter_type_with_key! {
 	pub ExistentialDeposits: |_currency_id: CurrencyId| -> Balance {
@@ -480,14 +474,15 @@ parameter_type_with_key! {
 }
 
 impl orml_tokens::Config for Runtime {
-	type Event = Event;
-	type Balance = Balance;
 	type Amount = Amount;
+	type Balance = Balance;
 	type CurrencyId = CurrencyId;
-	type WeightInfo = ();
+	type Event = Event;
 	type ExistentialDeposits = ExistentialDeposits;
-	type OnDust = (); //todo
+	// todo
 	type MaxLocks = MaxLocks;
+	type OnDust = ();
+	type WeightInfo = ();
 }
 
 pub const NATIVE_CURRENCY_ID: CurrencyId = CurrencyId::Token(TokenSymbol::NAME);
@@ -498,12 +493,11 @@ parameter_types! {
 
 impl orml_currencies::Config for Runtime {
 	type Event = Event;
+	type GetNativeCurrencyId = GetNativeCurrencyId;
 	type MultiCurrency = Tokens;
 	type NativeCurrency = NativeCurrency;
-	type GetNativeCurrencyId = GetNativeCurrencyId;
 	type WeightInfo = ();
 }
-
 
 // TODO: make those const fn
 pub fn dollar(decimals: u32) -> Balance {
@@ -538,18 +532,18 @@ parameter_types! {
 }
 
 impl pallet_proxy::Config for Runtime {
-	type Event = Event;
-	type Call = Call;
-	type Currency = Balances;
-	type ProxyType = ();
-	type ProxyDepositBase = ProxyDepositBase;
-	type ProxyDepositFactor = ProxyDepositFactor;
-	type MaxProxies = MaxProxies;
-	type WeightInfo = ();
-	type MaxPending = MaxPending;
-	type CallHasher = BlakeTwo256;
 	type AnnouncementDepositBase = AnnouncementDepositBase;
 	type AnnouncementDepositFactor = AnnouncementDepositFactor;
+	type Call = Call;
+	type CallHasher = BlakeTwo256;
+	type Currency = Balances;
+	type Event = Event;
+	type MaxPending = MaxPending;
+	type MaxProxies = MaxProxies;
+	type ProxyDepositBase = ProxyDepositBase;
+	type ProxyDepositFactor = ProxyDepositFactor;
+	type ProxyType = ();
+	type WeightInfo = ();
 }
 
 construct_runtime! {

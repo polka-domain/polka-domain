@@ -17,18 +17,13 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use codec::{Encode, Decode};
+use codec::{Decode, Encode};
 use frame_support::RuntimeDebug;
+use orml_traits::{MultiCurrency, MultiReservableCurrency};
+pub use pallet::*;
+use primitives::{CurrencyId, NFT};
 use sp_runtime::traits::{AtLeast32BitUnsigned, Saturating};
 use sp_std::prelude::*;
-use orml_traits::{
-	MultiCurrency,
-	MultiReservableCurrency,
-};
-use primitives::NFT;
-use primitives::CurrencyId;
-
-pub use pallet::*;
 
 #[cfg(test)]
 mod mock;
@@ -49,6 +44,7 @@ pub struct PoolDetails<AccountId, Balance, ClassId, TokenId> {
 pub mod pallet {
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
+
 	use super::*;
 
 	#[pallet::config]
@@ -57,7 +53,12 @@ pub mod pallet {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
 		/// The units in which we record balances.
-		type Balance: Member + Parameter + AtLeast32BitUnsigned + Default + Copy + MaybeSerializeDeserialize;
+		type Balance: Member
+			+ Parameter
+			+ AtLeast32BitUnsigned
+			+ Default
+			+ Copy
+			+ MaybeSerializeDeserialize;
 
 		/// The arithmetic type of order identifier.
 		type OrderId: Member + Parameter + AtLeast32BitUnsigned + Default + Copy;
@@ -79,7 +80,12 @@ pub mod pallet {
 		type TokenData: Parameter + Member + MaybeSerializeDeserialize;
 
 		/// The NFT mechanism
-		type NFT: NFT<Self::AccountId, ClassId = Self::ClassId, TokenId = Self::TokenId, Balance = Self::Balance>;
+		type NFT: NFT<
+			Self::AccountId,
+			ClassId = Self::ClassId,
+			TokenId = Self::TokenId,
+			Balance = Self::Balance,
+		>;
 	}
 
 	#[pallet::pallet]
@@ -96,13 +102,21 @@ pub mod pallet {
 	#[pallet::getter(fn pools)]
 	pub(super) type Order<T: Config> = StorageMap<
 		_,
-		Blake2_128Concat, T::OrderId,
+		Blake2_128Concat,
+		T::OrderId,
 		PoolDetails<T::AccountId, T::Balance, T::ClassId, T::TokenId>,
-		ValueQuery
+		ValueQuery,
 	>;
 
 	#[pallet::event]
-	#[pallet::metadata(T::AccountId = "AccountId", T::OrderId = "OrderId", T::ClassId = "ClassId", T::TokenId = "TokenId", CurrencyId = "CurrencyId", T::Balance = "Balance")]
+	#[pallet::metadata(
+		T::AccountId = "AccountId",
+		T::OrderId = "OrderId",
+		T::ClassId = "ClassId",
+		T::TokenId = "TokenId",
+		CurrencyId = "CurrencyId",
+		T::Balance = "Balance"
+	)]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		OrderCreated(T::OrderId, T::AccountId, (T::ClassId, T::TokenId), CurrencyId, T::Balance),
@@ -116,7 +130,7 @@ pub mod pallet {
 	}
 
 	#[pallet::call]
-	impl<T:Config> Pallet<T> {
+	impl<T: Config> Pallet<T> {
 		#[pallet::weight(1000)]
 		pub(super) fn make_order(
 			origin: OriginFor<T>,
@@ -129,13 +143,10 @@ pub mod pallet {
 
 			T::NFT::reserve(&maker, token0)?;
 
-			Order::<T>::insert(order_id, PoolDetails {
-				maker: maker.clone(),
-				taker: None,
-				token0,
-				token1,
-				total1,
-			});
+			Order::<T>::insert(
+				order_id,
+				PoolDetails { maker: maker.clone(), taker: None, token0, token1, total1 },
+			);
 			NextOrderId::<T>::put(order_id.saturating_add(1u32.into()));
 
 			Self::deposit_event(Event::OrderCreated(order_id, maker, token0, token1, total1));
@@ -144,10 +155,7 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(1000)]
-		pub(super) fn cancel_order(
-			origin: OriginFor<T>,
-			order_id: T::OrderId,
-		) -> DispatchResult {
+		pub(super) fn cancel_order(origin: OriginFor<T>, order_id: T::OrderId) -> DispatchResult {
 			let maker = ensure_signed(origin)?;
 			let order = Order::<T>::get(order_id);
 			ensure!(maker == order.maker, Error::<T>::InvalidCreator);

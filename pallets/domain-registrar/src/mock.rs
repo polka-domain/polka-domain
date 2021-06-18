@@ -16,17 +16,17 @@
 // limitations under the License.
 #![cfg(test)]
 
-use super::*;
-
-use crate as pallet_domain_registrar;
-use sp_core::H256;
 use frame_support::parameter_types;
-use sp_runtime::{
-		traits::{BlakeTwo256, IdentityLookup}, testing::Header,
-};
 use frame_system as system;
-use primitives::{Balance};
+use primitives::Balance;
+use sp_core::H256;
+use sp_runtime::{
+	testing::Header,
+	traits::{BlakeTwo256, IdentityLookup},
+};
 
+use super::*;
+use crate as pallet_domain_registrar;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
 type Block = frame_system::mocking::MockBlock<Runtime>;
@@ -50,40 +50,40 @@ parameter_types! {
 }
 
 impl system::Config for Runtime {
-		type BaseCallFilter = ();
-		type BlockWeights = ();
-		type BlockLength = ();
-		type DbWeight = ();
-		type Origin = Origin;
-		type Call = Call;
-		type Index = u64;
-		type BlockNumber = u64;
-		type Hash = H256;
-		type Hashing = BlakeTwo256;
-		type AccountId = u64;
-		type Lookup = IdentityLookup<Self::AccountId>;
-		type Header = Header;
-		type Event = Event;
-		type BlockHashCount = BlockHashCount;
-		type Version = ();
-		type PalletInfo = PalletInfo;
-		type AccountData = pallet_balances::AccountData<Balance>;
-		type OnNewAccount = ();
-		type OnKilledAccount = ();
-		type SystemWeightInfo = ();
-		type SS58Prefix = SS58Prefix;
-		type OnSetCode = ();
+	type AccountData = pallet_balances::AccountData<Balance>;
+	type AccountId = u64;
+	type BaseCallFilter = ();
+	type BlockHashCount = BlockHashCount;
+	type BlockLength = ();
+	type BlockNumber = u64;
+	type BlockWeights = ();
+	type Call = Call;
+	type DbWeight = ();
+	type Event = Event;
+	type Hash = H256;
+	type Hashing = BlakeTwo256;
+	type Header = Header;
+	type Index = u64;
+	type Lookup = IdentityLookup<Self::AccountId>;
+	type OnKilledAccount = ();
+	type OnNewAccount = ();
+	type OnSetCode = ();
+	type Origin = Origin;
+	type PalletInfo = PalletInfo;
+	type SS58Prefix = SS58Prefix;
+	type SystemWeightInfo = ();
+	type Version = ();
 }
 
 parameter_types! {
 	pub const ExistentialDeposit: u64 = 1;
 }
 impl pallet_balances::Config for Runtime {
-	type Balance = Balance;
-	type Event = Event;
-	type DustRemoval = ();
-	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = frame_system::Pallet<Runtime>;
+	type Balance = Balance;
+	type DustRemoval = ();
+	type Event = Event;
+	type ExistentialDeposit = ExistentialDeposit;
 	type MaxLocks = ();
 	type WeightInfo = ();
 }
@@ -94,12 +94,11 @@ parameter_types! {
 }
 
 impl pallet_domain_registrar::Config for Runtime {
-	type Event = Event;
-	type DomainDeposit = DomainDeposit;
-	type MaxDomainLen = MaxDomainLen;
-	type Currency = Balances;
 	type Call = Call;
-
+	type Currency = Balances;
+	type DomainDeposit = DomainDeposit;
+	type Event = Event;
+	type MaxDomainLen = MaxDomainLen;
 }
 
 pub type BalancesCall = pallet_balances::Call<Runtime>;
@@ -111,11 +110,9 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 		.unwrap()
 		.into();
 
-	pallet_balances::GenesisConfig::<Runtime> {
-		balances: vec![(1, 100000), (2, 100000)],
-	}
-	.assimilate_storage(&mut t)
-	.unwrap();
+	pallet_balances::GenesisConfig::<Runtime> { balances: vec![(1, 100000), (2, 100000)] }
+		.assimilate_storage(&mut t)
+		.unwrap();
 
 	let mut ext = sp_io::TestExternalities::new(t);
 	ext.execute_with(|| System::set_block_number(1));
@@ -123,8 +120,5 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 }
 
 pub fn last_event() -> Event {
-	frame_system::Pallet::<Runtime>::events()
-		.pop()
-		.expect("Event expected")
-		.event
+	frame_system::Pallet::<Runtime>::events().pop().expect("Event expected").event
 }
