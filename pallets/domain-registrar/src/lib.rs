@@ -19,11 +19,17 @@
 
 use codec::{Decode, Encode};
 use frame_support::{
-	dispatch::PostDispatchInfo, traits::Currency, weights::GetDispatchInfo, PalletId,
+	dispatch::PostDispatchInfo,
+	traits::{
+		Currency,
+		ExistenceRequirement::{AllowDeath, KeepAlive},
+	},
+	weights::GetDispatchInfo,
+	PalletId,
 };
 pub use pallet::*;
 use sp_runtime::{
-	traits::{Dispatchable, StaticLookup},
+	traits::{AccountIdConversion, Dispatchable, Saturating, StaticLookup, Zero},
 	RuntimeDebug,
 };
 use sp_std::prelude::*;
@@ -49,8 +55,6 @@ pub type ClassIdOf<T> = <T as orml_nft::Config>::ClassId;
 pub type CreateClassDepositOf<T> = <T as nft::Config>::CreateClassDeposit;
 pub type CreateTokenDepositOf<T> = <T as nft::Config>::CreateTokenDeposit;
 
-const DomainPalletId: PalletId = PalletId(*b"domain!!");
-
 #[frame_support::pallet]
 pub mod pallet {
 	use frame_support::{pallet_prelude::*, traits::ReservableCurrency};
@@ -70,6 +74,10 @@ pub mod pallet {
 		#[pallet::constant]
 		/// The deposit to be paid to register a domain.
 		type MaxDomainLen: Get<u32>;
+
+		#[pallet::constant]
+		/// The deposit to be paid to register a domain.
+		type NftClassID: Get<ClassIdOf<Self>>;
 
 		/// Because this pallet emits events, it depends on the runtime's definition of an event.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
@@ -140,8 +148,76 @@ pub mod pallet {
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
 		fn build(&self) {
 			self.domains.iter().for_each(|_item| {
-				// let who = &item.0;
-				// let owner: T::AccountId = DomainPalletId::get().into_account();
+				let who = &_item.0;
+				let next_id = orml_nft::Pallet::<T>::next_class_id();
+				let owner: T::AccountId =
+					<T as nft::Config>::PalletId::get().into_sub_account(next_id);
+				let class_deposit = <T as nft::Config>::CreateClassDeposit::get();
+
+				let proxy_deposit = <pallet_proxy::Pallet<T>>::deposit(1u32);
+				let total_deposit = proxy_deposit.saturating_add(class_deposit);
+
+				// ensure enough token for proxy deposit + class deposit
+				<T as pallet_proxy::Config>::Currency::transfer(
+					&who,
+					&owner,
+					total_deposit,
+					KeepAlive,
+				)
+				.expect("Create class: transfer cannot fail while building genesis");
+
+				<T as pallet_proxy::Config>::Currency::reserve(&owner, class_deposit)
+					.expect("Create class: reserve  cannot fail while building genesis");
+
+				// owner add proxy delegate to origin
+				<pallet_proxy::Pallet<T>>::add_proxy_delegate(
+					&owner,
+					who.clone(),
+					Default::default(),
+					Zero::zero(),
+				)
+				.expect("Create class: add_proxy_delegate  cannot fail while building genesis");
+
+				let properties = nft::Properties::default();
+
+				let data = nft::ClassData { deposit: class_deposit, properties };
+
+				let class_id = orml_nft::Pallet::<T>::create_class(
+					&owner,
+					br#"domain-nft-class"#.to_vec(),
+					data,
+				)
+				.expect("Create class:  create_class cannot fail while building genesis");
+
+				// mint nft
+				let to = &_item.0;
+				let class_info = orml_nft::Pallet::<T>::classes(class_id)
+					.expect("Token mint: get class info cannot fail while building genesis");
+				if owner != class_info.owner {
+					let e: Result<i8, &str> = Err("Error::<T>::NoPermission");
+					e.expect("Token mint: Permission cannot fail while building genesis");
+				}
+				let deposit = <T as nft::Config>::CreateTokenDeposit::get();
+				let total_deposit = deposit.saturating_mul(1u32.into());
+
+				<T as pallet_proxy::Config>::Currency::transfer(
+					&who,
+					&to,
+					total_deposit,
+					KeepAlive,
+				)
+				.expect("Token mint: transfer cannot fail while building genesis");
+				<T as pallet_proxy::Config>::Currency::reserve(&to, total_deposit)
+					.expect("Token mint: reserve  cannot fail while building genesis");
+
+				let token_data = nft::TokenData { deposit };
+				orml_nft::Pallet::<T>::mint(
+					&to,
+					class_id,
+					_item.1.to_vec(), // domain string
+					token_data.clone(),
+				)
+				.expect("Token mint cannot fail during genesis");
 			})
 		}
 	}
@@ -170,18 +246,11 @@ pub mod pallet {
 				domain.len() <= T::MaxDomainLen::get() as usize,
 				Error::<T>::InvalidDomainLength
 			);
-			//todo register create class,
 			// mint token
 
-			// let owner: T::AccountId = nft::Pallet::<T>::PalletId::get().into_account();
-			// let class_deposit = nft::Pallet::<T>::CreateClassDeposit::get();
-
-			// let proxy_deposit = <pallet_proxy::Pallet<T>>::deposit(1u32);
-			// let total_deposit = proxy_deposit.saturating_add(class_deposit);
-
-			//let token_id = orml_nft::Pallet::<T>::next_token_id(0);
-			let token_id = 0u32;
 			//todo get nft domain class id replace to 0
+			let token_id = orml_nft::Pallet::<T>::next_token_id(T::NftClassID::get());
+
 			nft::Pallet::<T>::mint(
 				origin,
 				T::Lookup::unlookup(who.clone()),
