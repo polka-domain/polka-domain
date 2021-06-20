@@ -13,7 +13,13 @@ frame-system = { git = "https://github.com/paritytech/substrate", default-featur
 frame-benchmarking = { git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "polkadot-v0.9.3" }
 sp-runtime = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.3" }
 sp-std = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.3" }
+pallet-proxy = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.3" }
 primitives = { package = "polka-domain-primitives", path = "../../primitives", default-features = false }
+nft = { package = "pallet-nft", path = "../nft", default-features = false }
+
+orml-tokens = { git = "https://github.com/open-web3-stack/open-runtime-module-library", default-features = false }
+orml-traits = { git = "https://github.com/open-web3-stack/open-runtime-module-library", default-features = false }
+orml-nft = { git = "https://github.com/open-web3-stack/open-runtime-module-library", default-features = false }
 
 [dev-dependencies]
 serde = { version = "1.0.124" }
@@ -32,6 +38,11 @@ std = [
 	'sp-runtime/std',
 	'sp-std/std',
 	'pallet-balances/std',
+	"pallet-proxy/std",
 	'primitives/std',
+	'nft/std',
+	"orml-tokens/std",
+	"orml-traits/std",
+	"orml-nft/std",
 ]
 runtime-benchmarks = ["frame-benchmarking"]

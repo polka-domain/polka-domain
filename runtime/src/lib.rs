@@ -406,6 +406,8 @@ impl domain_registrar::Config for Runtime {
 	type DomainDeposit = ();
 	type Event = Event;
 	type MaxDomainLen = MaxDomainLen;
+	type ClassData = nft::ClassData<Balance>;
+	type TokenData = nft::TokenData<Balance>;
 }
 
 parameter_types! {
