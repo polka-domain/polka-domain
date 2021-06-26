@@ -27,6 +27,7 @@ use frame_support::{
 	weights::GetDispatchInfo,
 	PalletId,
 };
+use nft::Call as NFTCall;
 pub use pallet::*;
 use sp_runtime::{
 	traits::{AccountIdConversion, Dispatchable, Saturating, StaticLookup, Zero},
@@ -149,7 +150,7 @@ pub mod pallet {
 		fn build(&self) {
 			self.domains.iter().for_each(|_item| {
 				let who = &_item.0;
-				let next_id = orml_nft::Pallet::<T>::next_class_id();
+				let next_id = orml_nft::Pallet::<T>::next_class_id(); //todo just use one class id
 				let owner: T::AccountId =
 					<T as nft::Config>::PalletId::get().into_sub_account(next_id);
 				let class_deposit = <T as nft::Config>::CreateClassDeposit::get();
@@ -247,17 +248,22 @@ pub mod pallet {
 				Error::<T>::InvalidDomainLength
 			);
 			// mint token
-
 			//todo get nft domain class id replace to 0
 			let token_id = orml_nft::Pallet::<T>::next_token_id(T::NftClassID::get());
 
-			nft::Pallet::<T>::mint(
-				origin,
+			let call_mint = Box::new(Call::Balances(NFTCall::mint(
 				T::Lookup::unlookup(who.clone()),
 				0u32.into(),
 				domain.clone(),
 				1,
-			)?;
+			)));
+
+			pallet_proxy::Pallet::<T>::proxy(
+				origin.clone(),
+				<T as nft::Config>::PalletId::get().into_account(),
+				None,
+				call_mint,
+			);
 
 			let deposit = T::DomainDeposit::get();
 			<T as pallet::Config>::Currency::reserve(&who, deposit)?;

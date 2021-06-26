@@ -34,6 +34,7 @@ pub use frame_support::{
 	PalletId, StorageValue,
 };
 use frame_system::limits::{BlockLength, BlockWeights};
+pub use nft::Call as NFTCall;
 use orml_traits::parameter_type_with_key;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_timestamp::Call as TimestampCall;
