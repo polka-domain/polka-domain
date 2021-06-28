@@ -37,6 +37,14 @@ pub struct DomainInfo<AccountId, Balance> {
 	deposit: Balance,
 }
 
+#[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug)]
+pub enum ChainType {
+	BTC,
+	ETH,
+	DOT,
+	DOGE,
+}
+
 #[frame_support::pallet]
 pub mod pallet {
 	use frame_support::{pallet_prelude::*, traits::ReservableCurrency};
@@ -95,6 +103,7 @@ pub mod pallet {
 		DomainRegistered(T::AccountId, Vec<u8>, Vec<u8>, BalanceOf<T>),
 		DomainDeregistered(T::AccountId, Vec<u8>),
 		Sent(T::AccountId, Vec<u8>),
+		BindAddress(T::AccountId, Vec<u8>, ChainType, Vec<u8>),
 	}
 
 	#[pallet::error]
@@ -166,6 +175,41 @@ pub mod pallet {
 				.map_err(|e| e.error)?;
 
 			Self::deposit_event(Event::Sent(who, domain));
+
+			Ok(().into())
+		}
+
+		#[pallet::weight(0)]
+		pub(super) fn bind_address(
+			origin: OriginFor<T>,
+			domain: Vec<u8>,
+			chain_type: ChainType,
+			address: Vec<u8>,
+		) -> DispatchResultWithPostInfo {
+			let who = ensure_signed(origin)?;
+
+			if Domains::<T>::contains_key(&who) {
+				if domain == <Domains<T>>::get(&who) {
+					DomainInfos::<T>::try_mutate(&domain, |domain_info| -> DispatchResult {
+						match chain_type {
+							ChainType::ETH => {
+								domain_info.ethereum = address;
+							}
+							ChainType::DOT => {}
+							ChainType::DOGE => {}
+							_ => {}
+						}
+						Self::deposit_event(Event::BindAddress(
+							who,
+							domain.clone(),
+							chain_type,
+							vec![3],
+						));
+
+						Ok(())
+					})?;
+				}
+			}
 
 			Ok(().into())
 		}
