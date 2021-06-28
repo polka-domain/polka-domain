@@ -87,3 +87,31 @@ fn send() {
 		assert_eq!(Balances::free_balance(2), 100000 - 100);
 	});
 }
+
+#[test]
+fn bind_address() {
+	new_test_ext().execute_with(|| {
+		assert_ok!(DomainModule::register(Origin::signed(1), vec![1], vec![2], Some(1)));
+
+		let event =
+			Event::pallet_domain_registrar(crate::Event::DomainRegistered(1, vec![1], vec![2], 1));
+		assert_eq!(last_event(), event);
+		assert_eq!(crate::DomainInfos::<Runtime>::get(vec![1]).ethereum, vec![2]);
+
+		assert_ok!(DomainModule::bind_address(
+			Origin::signed(1),
+			vec![1],
+			crate::ChainType::ETH,
+			vec![3]
+		));
+
+		let event = Event::pallet_domain_registrar(crate::Event::BindAddress(
+			1,
+			vec![1],
+			crate::ChainType::ETH,
+			vec![3],
+		));
+		assert_eq!(last_event(), event);
+		assert_eq!(crate::DomainInfos::<Runtime>::get(vec![1]).ethereum, vec![3]);
+	});
+}

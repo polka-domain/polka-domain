@@ -50,6 +50,14 @@ pub struct DomainInfo<AccountId, Balance, ClassId, TokenId> {
 	nft_token: (ClassId, TokenId),
 }
 
+#[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug)]
+pub enum ChainType {
+	BTC,
+	ETH,
+	DOT,
+	DOGE,
+}
+
 pub type TokenIdOf<T> = <T as orml_nft::Config>::TokenId;
 pub type ClassIdOf<T> = <T as orml_nft::Config>::ClassId;
 
@@ -131,6 +139,7 @@ pub mod pallet {
 		DomainDeregistered(T::AccountId, Vec<u8>),                      //todo add tokenid and classid
 		Sent(T::AccountId, Vec<u8>),
 		Transfer(T::AccountId, T::AccountId, Vec<u8>, Vec<u8>), //todo add tokenid and classid
+        BindAddress(T::AccountId, Vec<u8>, ChainType, Vec<u8>),
 	}
 
 	#[pallet::genesis_config]
@@ -323,6 +332,7 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(0)]
+
 		pub(super) fn transfer(
 			origin: OriginFor<T>,
 			to: T::AccountId,
@@ -344,6 +354,37 @@ pub mod pallet {
 
 				Ok(().into())
 			})?;
+
+		pub(super) fn bind_address(
+			origin: OriginFor<T>,
+			domain: Vec<u8>,
+			chain_type: ChainType,
+			address: Vec<u8>,
+		) -> DispatchResultWithPostInfo {
+			let who = ensure_signed(origin)?;
+
+			if Domains::<T>::contains_key(&who) {
+				if domain == <Domains<T>>::get(&who) {
+					DomainInfos::<T>::try_mutate(&domain, |domain_info| -> DispatchResult {
+						match chain_type {
+							ChainType::ETH => {
+								domain_info.ethereum = address;
+							}
+							ChainType::DOT => {}
+							ChainType::DOGE => {}
+							_ => {}
+						}
+						Self::deposit_event(Event::BindAddress(
+							who,
+							domain.clone(),
+							chain_type,
+							domain_info.ethereum,
+						));
+
+						Ok(())
+					})?;
+				}
+			}
 
 			Ok(().into())
 		}
