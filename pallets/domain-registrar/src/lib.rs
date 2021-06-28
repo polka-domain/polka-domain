@@ -74,7 +74,14 @@ pub mod pallet {
 		/// The overarching call type.
 		type Call: Parameter
 			+ Dispatchable<Origin = Self::Origin, PostInfo = PostDispatchInfo>
-			+ GetDispatchInfo;
+			+ GetDispatchInfo
+			+ From<frame_system::Call<Self>>;
+
+		/// The class properties type
+		type ClassData: Parameter + Member + MaybeSerializeDeserialize;
+
+		/// The token properties type
+		type TokenData: Parameter + Member + MaybeSerializeDeserialize;
 	}
 
 	#[pallet::pallet]
@@ -103,7 +110,117 @@ pub mod pallet {
 		DomainRegistered(T::AccountId, Vec<u8>, Vec<u8>, BalanceOf<T>),
 		DomainDeregistered(T::AccountId, Vec<u8>),
 		Sent(T::AccountId, Vec<u8>),
+		Transfer(T::AccountId, T::AccountId, Vec<u8>, Vec<u8>), //todo add tokenid and classid
 		BindAddress(T::AccountId, Vec<u8>, ChainType, Vec<u8>),
+	}
+
+	#[pallet::genesis_config]
+	pub struct GenesisConfig<T: Config> {
+		pub domains: Vec<GenesisDomainData<T>>,
+	}
+
+	#[cfg(feature = "std")]
+	impl<T: Config> Default for GenesisConfig<T> {
+		fn default() -> Self {
+			GenesisConfig { domains: vec![] }
+		}
+	}
+
+	#[pallet::genesis_build]
+	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+		fn build(&self) {
+			self.domains.iter().for_each(|_item| {
+				let who = &_item.0;
+				let next_id = orml_nft::Pallet::<T>::next_class_id(); //todo just use one class id
+				let owner: T::AccountId =
+					<T as nft::Config>::PalletId::get().into_sub_account(next_id);
+				let class_deposit = <T as nft::Config>::CreateClassDeposit::get();
+
+				let proxy_deposit = <pallet_proxy::Pallet<T>>::deposit(1u32);
+				let total_deposit = proxy_deposit.saturating_add(class_deposit);
+
+				// ensure enough token for proxy deposit + class deposit
+				<T as pallet_proxy::Config>::Currency::transfer(
+					&who,
+					&owner,
+					total_deposit,
+					KeepAlive,
+				)
+				.expect("Create class: transfer cannot fail while building genesis");
+
+				<T as pallet_proxy::Config>::Currency::reserve(&owner, class_deposit)
+					.expect("Create class: reserve  cannot fail while building genesis");
+
+				// owner add proxy delegate to origin
+				<pallet_proxy::Pallet<T>>::add_proxy_delegate(
+					&owner,
+					who.clone(),
+					Default::default(),
+					Zero::zero(),
+				)
+				.expect("Create class: add_proxy_delegate  cannot fail while building genesis");
+
+				let properties = nft::Properties(
+					nft::ClassProperty::Transferable | nft::ClassProperty::Burnable,
+				);
+
+				let data = nft::ClassData { deposit: class_deposit, properties };
+
+				let class_id = orml_nft::Pallet::<T>::create_class(
+					&owner,
+					br#"domain-nft-class"#.to_vec(),
+					data,
+				)
+				.expect("Create class:  create_class cannot fail while building genesis");
+
+				// mint nft
+				let to = &_item.0;
+				let class_info = orml_nft::Pallet::<T>::classes(class_id)
+					.expect("Token mint: get class info cannot fail while building genesis");
+				if owner != class_info.owner {
+					let e: Result<i8, &str> = Err("Error::<T>::NoPermission");
+					e.expect("Token mint: Permission cannot fail while building genesis");
+				}
+				let deposit = <T as nft::Config>::CreateTokenDeposit::get();
+				let total_deposit = deposit.saturating_mul(1u32.into());
+
+				<T as pallet_proxy::Config>::Currency::transfer(
+					&who,
+					&to,
+					total_deposit,
+					KeepAlive,
+				)
+				.expect("Token mint: transfer cannot fail while building genesis");
+				<T as pallet_proxy::Config>::Currency::reserve(&to, total_deposit)
+					.expect("Token mint: reserve  cannot fail while building genesis");
+
+				let token_data = nft::TokenData { deposit };
+				orml_nft::Pallet::<T>::mint(
+					&to,
+					class_id,
+					_item.1.to_vec(), // domain string
+					token_data.clone(),
+				)
+				.expect("Token mint cannot fail during genesis");
+			})
+		}
+	}
+
+	#[cfg(feature = "std")]
+	impl<T: Config> GenesisConfig<T> {
+		/// Direct implementation of `GenesisBuild::build_storage`.
+		///
+		/// Kept in order not to break dependency.
+		pub fn build_storage(&self) -> Result<sp_runtime::Storage, String> {
+			<Self as frame_support::traits::GenesisBuild<T>>::build_storage(self)
+		}
+
+		/// Direct implementation of `GenesisBuild::assimilate_storage`.
+		///
+		/// Kept in order not to break dependency.
+		pub fn assimilate_storage(&self, storage: &mut sp_runtime::Storage) -> Result<(), String> {
+			<Self as frame_support::traits::GenesisBuild<T>>::assimilate_storage(self, storage)
+		}
 	}
 
 	#[pallet::error]
@@ -130,6 +247,25 @@ pub mod pallet {
 				domain.len() <= T::MaxDomainLen::get() as usize,
 				Error::<T>::InvalidDomainLength
 			);
+			// mint token
+			//todo get nft domain class id replace to 0
+			let token_id = orml_nft::Pallet::<T>::next_token_id(T::NftClassID::get());
+
+			// print!("#### call is Call {:?}", Call::register(0));
+			// let call_mint = Box::new(Call::NFT(NFTCall::mint(
+			// 	T::Lookup::unlookup(who.clone()),
+			// 	0u32.into(),
+			// 	domain.clone(),
+			// 	1,
+			// )));
+
+			// pallet_proxy::Pallet::<T>::proxy(
+			// 	origin.clone(),
+			// 	<T as nft::Config>::PalletId::get().into_account(),
+			// 	None,
+			// 	call_mint,
+			// );
+
 			let deposit = T::DomainDeposit::get();
 			T::Currency::reserve(&who, deposit)?;
 			<DomainInfos<T>>::insert(
@@ -151,6 +287,9 @@ pub mod pallet {
 			let who = ensure_signed(origin)?;
 
 			let domain_info = <DomainInfos<T>>::take(&domain);
+			//print!("#### burn domain_info.nft_token  {:?}", domain_info.nft_token);
+			nft::Pallet::<T>::burn(origin, domain_info.nft_token)?;
+
 			<Domains<T>>::remove(&who);
 			T::Currency::unreserve(&who, domain_info.deposit);
 
@@ -175,6 +314,32 @@ pub mod pallet {
 				.map_err(|e| e.error)?;
 
 			Self::deposit_event(Event::Sent(who, domain));
+
+			Ok(().into())
+		}
+
+		#[pallet::weight(0)]
+		pub(super) fn transfer(
+			origin: OriginFor<T>,
+			to: T::AccountId,
+			domain: Vec<u8>,
+		) -> DispatchResultWithPostInfo {
+			let who = ensure_signed(origin.clone())?;
+
+			<DomainInfos<T>>::try_mutate(&domain, |domain_info| -> DispatchResultWithPostInfo {
+				nft::Pallet::<T>::transfer(
+					origin,
+					T::Lookup::unlookup(to.clone()),
+					domain_info.nft_token,
+				)?;
+
+				<Domains<T>>::remove(&who);
+				<Domains<T>>::insert(&to, &domain);
+
+				domain_info.native = to;
+
+				Ok(().into())
+			})?;
 
 			Ok(().into())
 		}

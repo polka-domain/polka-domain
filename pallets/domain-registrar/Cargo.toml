@@ -13,6 +13,9 @@ frame-system = { git = "https://github.com/paritytech/substrate", default-featur
 frame-benchmarking = { git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "polkadot-v0.9.3" }
 sp-runtime = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.3" }
 sp-std = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.3" }
+pallet-proxy = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3", default-features = false }
+pallet-utility = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.3", default-features = false }
+pallet-balances = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.3" }
 primitives = { package = "polka-domain-primitives", path = "../../primitives", default-features = false }
 
 [dev-dependencies]
@@ -32,6 +35,8 @@ std = [
 	'sp-runtime/std',
 	'sp-std/std',
 	'pallet-balances/std',
+	"pallet-proxy/std",
+	"pallet-utility/std",
 	'primitives/std',
 ]
 runtime-benchmarks = ["frame-benchmarking"]
