@@ -588,7 +588,7 @@ construct_runtime! {
 
 		// Polka Domain Modules
 		DomainRegistrar: domain_registrar::{Pallet, Call, Storage, Event<T>, Config<T>},
-		NFT: nft::{Pallet, Call, Storage, Event<T>},
+		NFT: nft::{Pallet, Call, Storage, Event<T>, Config<T>},
 		Order: order::{Pallet, Call, Storage, Event<T>},
 		Auction: auction::{Pallet, Call, Storage, Event<T>},
 

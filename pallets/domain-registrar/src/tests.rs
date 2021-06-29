@@ -35,6 +35,11 @@ fn test_register() {
 
 		assert_ok!(DomainModule::register(Origin::signed(1), vec![1], vec![2], Some(1)));
 
+		assert_noop!(
+			DomainModule::register(Origin::signed(1), vec![1], vec![2], Some(1)),
+			Error::<Runtime>::DomainExist
+		);
+
 		let event =
 			Event::pallet_domain_registrar(crate::Event::DomainRegistered(1, vec![1], vec![2], 1));
 		assert_eq!(last_event(), event);
@@ -42,10 +47,14 @@ fn test_register() {
 		assert_eq!(crate::Domains::<Runtime>::get(1), vec![1]);
 		assert_eq!(
 			crate::DomainInfos::<Runtime>::get(vec![1]),
-			crate::DomainInfo { native: 1, relay: Some(1), ethereum: vec![2], deposit: 1 }
+			crate::DomainInfo {
+				native: 1,
+				relay: Some(1),
+				ethereum: vec![2],
+				deposit: 1,
+				nft_token: (0, 1)
+			}
 		);
-
-		assert_eq!(Balances::free_balance(1), 100000 - 1);
 	});
 }
 
@@ -63,8 +72,6 @@ fn deregister() {
 		assert_eq!(last_event(), event);
 		assert_eq!(crate::Domains::<Runtime>::get(1), Vec::<u8>::new());
 		assert_eq!(crate::DomainInfos::<Runtime>::get(vec![1]), Default::default());
-
-		assert_eq!(Balances::free_balance(1), 100000);
 	});
 }
 
@@ -82,9 +89,6 @@ fn send() {
 
 		let event = Event::pallet_domain_registrar(crate::Event::Sent(2, vec![1]));
 		assert_eq!(last_event(), event);
-
-		assert_eq!(Balances::free_balance(1), 100000 + 100 - 1);
-		assert_eq!(Balances::free_balance(2), 100000 - 100);
 	});
 }
 

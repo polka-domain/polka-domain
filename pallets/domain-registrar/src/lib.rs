@@ -20,14 +20,9 @@
 use codec::{Decode, Encode};
 use frame_support::{
 	dispatch::PostDispatchInfo,
-	traits::{
-		Currency,
-		ExistenceRequirement::{AllowDeath, KeepAlive},
-	},
+	traits::{Currency, ExistenceRequirement::KeepAlive},
 	weights::GetDispatchInfo,
-	PalletId,
 };
-use nft::Call as NFTCall;
 pub use pallet::*;
 use sp_runtime::{
 	traits::{AccountIdConversion, Dispatchable, Saturating, StaticLookup, Zero},
@@ -139,97 +134,7 @@ pub mod pallet {
 		DomainDeregistered(T::AccountId, Vec<u8>),                      //todo add tokenid and classid
 		Sent(T::AccountId, Vec<u8>),
 		Transfer(T::AccountId, T::AccountId, Vec<u8>, Vec<u8>), //todo add tokenid and classid
-        BindAddress(T::AccountId, Vec<u8>, ChainType, Vec<u8>),
-	}
-
-	#[pallet::genesis_config]
-	pub struct GenesisConfig<T: Config> {
-		pub domains: Vec<GenesisDomainData<T>>,
-	}
-
-	#[cfg(feature = "std")]
-	impl<T: Config> Default for GenesisConfig<T> {
-		fn default() -> Self {
-			GenesisConfig { domains: vec![] }
-		}
-	}
-
-	#[pallet::genesis_build]
-	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
-		fn build(&self) {
-			self.domains.iter().for_each(|_item| {
-				let who = &_item.0;
-				let next_id = orml_nft::Pallet::<T>::next_class_id(); //todo just use one class id
-				let owner: T::AccountId =
-					<T as nft::Config>::PalletId::get().into_sub_account(next_id);
-				let class_deposit = <T as nft::Config>::CreateClassDeposit::get();
-
-				let proxy_deposit = <pallet_proxy::Pallet<T>>::deposit(1u32);
-				let total_deposit = proxy_deposit.saturating_add(class_deposit);
-
-				// ensure enough token for proxy deposit + class deposit
-				<T as pallet_proxy::Config>::Currency::transfer(
-					&who,
-					&owner,
-					total_deposit,
-					KeepAlive,
-				)
-				.expect("Create class: transfer cannot fail while building genesis");
-
-				<T as pallet_proxy::Config>::Currency::reserve(&owner, class_deposit)
-					.expect("Create class: reserve  cannot fail while building genesis");
-
-				// owner add proxy delegate to origin
-				<pallet_proxy::Pallet<T>>::add_proxy_delegate(
-					&owner,
-					who.clone(),
-					Default::default(),
-					Zero::zero(),
-				)
-				.expect("Create class: add_proxy_delegate  cannot fail while building genesis");
-
-				let properties = nft::Properties::default();
-
-				let data = nft::ClassData { deposit: class_deposit, properties };
-
-				let class_id = orml_nft::Pallet::<T>::create_class(
-					&owner,
-					br#"domain-nft-class"#.to_vec(),
-					data,
-				)
-				.expect("Create class:  create_class cannot fail while building genesis");
-
-				// mint nft
-				let to = &_item.0;
-				let class_info = orml_nft::Pallet::<T>::classes(class_id)
-					.expect("Token mint: get class info cannot fail while building genesis");
-				if owner != class_info.owner {
-					let e: Result<i8, &str> = Err("Error::<T>::NoPermission");
-					e.expect("Token mint: Permission cannot fail while building genesis");
-				}
-				let deposit = <T as nft::Config>::CreateTokenDeposit::get();
-				let total_deposit = deposit.saturating_mul(1u32.into());
-
-				<T as pallet_proxy::Config>::Currency::transfer(
-					&who,
-					&to,
-					total_deposit,
-					KeepAlive,
-				)
-				.expect("Token mint: transfer cannot fail while building genesis");
-				<T as pallet_proxy::Config>::Currency::reserve(&to, total_deposit)
-					.expect("Token mint: reserve  cannot fail while building genesis");
-
-				let token_data = nft::TokenData { deposit };
-				orml_nft::Pallet::<T>::mint(
-					&to,
-					class_id,
-					_item.1.to_vec(), // domain string
-					token_data.clone(),
-				)
-				.expect("Token mint cannot fail during genesis");
-			})
-		}
+		BindAddress(T::AccountId, Vec<u8>, ChainType, Vec<u8>),
 	}
 
 	#[pallet::genesis_config]
@@ -345,6 +250,7 @@ pub mod pallet {
 	pub enum Error<T> {
 		InvalidDomainLength,
 		InvalidTarget,
+		DomainExist,
 	}
 
 	#[pallet::hooks]
@@ -365,23 +271,43 @@ pub mod pallet {
 				domain.len() <= T::MaxDomainLen::get() as usize,
 				Error::<T>::InvalidDomainLength
 			);
-			// mint token
-			//todo get nft domain class id replace to 0
+
+			ensure!(!DomainInfos::<T>::contains_key(&domain), Error::<T>::DomainExist);
+
 			let token_id = orml_nft::Pallet::<T>::next_token_id(T::NftClassID::get());
+			let owner: T::AccountId = T::PalletId::get().into_sub_account(token_id);
 
-			let call_mint = Box::new(Call::NFT(NFTCall::mint(
-				T::Lookup::unlookup(who.clone()),
-				0u32.into(),
-				domain.clone(),
-				1,
-			)));
+			// todo, call nft::mint later
+			let proxy_deposit = <pallet_proxy::Pallet<T>>::deposit(1u32);
+			let total_deposit = proxy_deposit;
 
-			pallet_proxy::Pallet::<T>::proxy(
-				origin.clone(),
-				<T as nft::Config>::PalletId::get().into_account(),
-				None,
-				call_mint,
-			);
+			// ensure enough token for proxy deposit + class deposit
+			<T as pallet_proxy::Config>::Currency::transfer(
+				&who,
+				&owner,
+				total_deposit,
+				KeepAlive,
+			)?;
+
+			<pallet_proxy::Pallet<T>>::add_proxy_delegate(
+				&owner,
+				who.clone(),
+				Default::default(),
+				Zero::zero(),
+			)?;
+
+			let deposit = <T as nft::Config>::CreateTokenDeposit::get();
+			let total_deposit = deposit.saturating_mul(1u32.into());
+			<T as pallet_proxy::Config>::Currency::transfer(&who, &who, total_deposit, KeepAlive)?;
+			<T as pallet_proxy::Config>::Currency::reserve(&who, total_deposit)?;
+			let token_data = nft::TokenData { deposit };
+
+			orml_nft::Pallet::<T>::mint(
+				&who,
+				T::NftClassID::get(),
+				domain.clone(), // domain string
+				token_data.clone(),
+			)?;
 
 			let deposit = T::DomainDeposit::get();
 			<T as pallet::Config>::Currency::reserve(&who, deposit)?;
@@ -392,7 +318,7 @@ pub mod pallet {
 					relay,
 					ethereum: ethereum.clone(),
 					deposit,
-					nft_token: (0u32.into(), token_id.into()),
+					nft_token: (T::NftClassID::get(), token_id.into()),
 				},
 			);
 			<Domains<T>>::insert(&who, &domain);
@@ -410,7 +336,6 @@ pub mod pallet {
 			let who = ensure_signed(origin.clone())?;
 
 			let domain_info = <DomainInfos<T>>::take(&domain);
-			//print!("#### burn domain_info.nft_token  {:?}", domain_info.nft_token);
 			nft::Pallet::<T>::burn(origin, domain_info.nft_token)?;
 
 			<Domains<T>>::remove(&who);
@@ -491,7 +416,7 @@ pub mod pallet {
 							who,
 							domain.clone(),
 							chain_type,
-							domain_info.ethereum,
+							domain_info.ethereum.clone(),
 						));
 
 						Ok(())

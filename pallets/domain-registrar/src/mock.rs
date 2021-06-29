@@ -16,7 +16,11 @@
 // limitations under the License.
 #![cfg(test)]
 
-use frame_support::parameter_types;
+use frame_support::{
+	parameter_types,
+	traits::{Filter, InstanceFilter},
+	PalletId,
+};
 use frame_system as system;
 use primitives::Balance;
 use sp_core::H256;
@@ -27,6 +31,8 @@ use sp_runtime::{
 
 use super::*;
 use crate as pallet_domain_registrar;
+
+use frame_system::Call as SystemCall;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
 type Block = frame_system::mocking::MockBlock<Runtime>;
@@ -41,6 +47,11 @@ frame_support::construct_runtime!(
 				System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 				Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 				DomainModule: pallet_domain_registrar::{Pallet, Call, Storage, Event<T>},
+				OrmlNFT: orml_nft::{Pallet, Storage, Config<T>},
+				NFT: nft::{Pallet, Call, Storage, Config<T>, Event<T>},
+				Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>},
+				Utility: pallet_utility::{Pallet, Call, Event},
+
 		}
 );
 
@@ -88,9 +99,108 @@ impl pallet_balances::Config for Runtime {
 	type WeightInfo = ();
 }
 
+impl pallet_utility::Config for Runtime {
+	type Call = Call;
+	type Event = Event;
+	type WeightInfo = ();
+}
+
+parameter_types! {
+	pub const ProxyDepositBase: u64 = 1;
+	pub const ProxyDepositFactor: u64 = 1;
+	pub const MaxProxies: u16 = 4;
+	pub const MaxPending: u32 = 2;
+	pub const AnnouncementDepositBase: u64 = 1;
+	pub const AnnouncementDepositFactor: u64 = 1;
+}
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, RuntimeDebug)]
+pub enum ProxyType {
+	Any,
+	JustTransfer,
+	JustUtility,
+	JustNFT,
+}
+impl Default for ProxyType {
+	fn default() -> Self {
+		Self::Any
+	}
+}
+impl InstanceFilter<Call> for ProxyType {
+	fn filter(&self, c: &Call) -> bool {
+		match self {
+			ProxyType::Any => true,
+			ProxyType::JustTransfer => {
+				matches!(c, Call::Balances(pallet_balances::Call::transfer(..)))
+			}
+			ProxyType::JustUtility => matches!(c, Call::Utility(..)),
+			ProxyType::JustNFT => matches!(c, Call::NFT(..)),
+		}
+	}
+
+	fn is_superset(&self, o: &Self) -> bool {
+		self == &ProxyType::Any || self == o
+	}
+}
+pub struct BaseFilter;
+impl Filter<Call> for BaseFilter {
+	fn filter(c: &Call) -> bool {
+		match *c {
+			// Remark is used as a no-op call in the benchmarking
+			Call::System(SystemCall::remark(_)) => true,
+			Call::System(_) => false,
+			Call::Balances(pallet_balances::Call::set_balance(..)) => true,
+			Call::NFT(nft::Call::mint(..)) => true,
+			_ => true,
+		}
+	}
+}
+impl pallet_proxy::Config for Runtime {
+	type AnnouncementDepositBase = AnnouncementDepositBase;
+	type AnnouncementDepositFactor = AnnouncementDepositFactor;
+	type Call = Call;
+	type CallHasher = BlakeTwo256;
+	type Currency = Balances;
+	type Event = Event;
+	type MaxPending = MaxPending;
+	type MaxProxies = MaxProxies;
+	type ProxyDepositBase = ProxyDepositBase;
+	type ProxyDepositFactor = ProxyDepositFactor;
+	type ProxyType = ProxyType;
+	type WeightInfo = ();
+}
+
+parameter_types! {
+	pub const CreateClassDeposit: Balance = 200;
+	pub const CreateTokenDeposit: Balance = 100;
+	pub const NftPalletId: PalletId = PalletId(*b"pol/aNFT");
+}
+
+impl nft::Config for Runtime {
+	type CreateClassDeposit = CreateClassDeposit;
+	type CreateTokenDeposit = CreateTokenDeposit;
+	type Event = Event;
+	type PalletId = NftPalletId;
+	type WeightInfo = ();
+}
+
+parameter_types! {
+	pub const MaxClassMetadata: u32 = 256;
+	pub const MaxTokenMetadata: u32 = 256;
+}
+
+impl orml_nft::Config for Runtime {
+	type ClassData = nft::ClassData<Balance>;
+	type ClassId = u32;
+	type MaxClassMetadata = MaxClassMetadata;
+	type MaxTokenMetadata = MaxTokenMetadata;
+	type TokenData = nft::TokenData<Balance>;
+	type TokenId = u64;
+}
+
 parameter_types! {
 	pub const DomainDeposit: u32 = 1;
 	pub const MaxDomainLen: u32 = 10;
+	pub const NftClassID: u32 = 0;
 }
 
 impl pallet_domain_registrar::Config for Runtime {
@@ -99,6 +209,9 @@ impl pallet_domain_registrar::Config for Runtime {
 	type DomainDeposit = DomainDeposit;
 	type Event = Event;
 	type MaxDomainLen = MaxDomainLen;
+	type ClassData = nft::ClassData<Balance>;
+	type TokenData = nft::TokenData<Balance>;
+	type NftClassID = NftClassID;
 }
 
 pub type BalancesCall = pallet_balances::Call<Runtime>;
@@ -110,9 +223,17 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 		.unwrap()
 		.into();
 
-	pallet_balances::GenesisConfig::<Runtime> { balances: vec![(1, 100000), (2, 100000)] }
-		.assimilate_storage(&mut t)
-		.unwrap();
+	pallet_balances::GenesisConfig::<Runtime> {
+		balances: vec![(1, 100000), (2, 100000), (3, 100000)],
+	}
+	.assimilate_storage(&mut t)
+	.unwrap();
+
+	pallet_domain_registrar::GenesisConfig::<Runtime> {
+		domains: vec![(3, br#"polka.domain"#.to_vec(), br#"0x0000"#.to_vec())],
+	}
+	.assimilate_storage(&mut t)
+	.unwrap();
 
 	let mut ext = sp_io::TestExternalities::new(t);
 	ext.execute_with(|| System::set_block_number(1));
