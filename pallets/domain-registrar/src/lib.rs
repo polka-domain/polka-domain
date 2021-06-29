@@ -130,10 +130,10 @@ pub mod pallet {
 	#[pallet::metadata(T::AccountId = "AccountId", BalanceOf<T> = "Balance", ClassIdOf<T> = "ClassId", TokenIdOf<T> = "TokenId")]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		DomainRegistered(T::AccountId, Vec<u8>, Vec<u8>, BalanceOf<T>), //todo add tokenid and classid
-		DomainDeregistered(T::AccountId, Vec<u8>),                      //todo add tokenid and classid
+		DomainRegistered(T::AccountId, Vec<u8>, Vec<u8>, BalanceOf<T>, (T::ClassId, T::TokenId)), //todo add tokenid and classid
+		DomainDeregistered(T::AccountId, Vec<u8>, (T::ClassId, T::TokenId)), //todo add tokenid and classid
 		Sent(T::AccountId, Vec<u8>),
-		Transfer(T::AccountId, T::AccountId, Vec<u8>, Vec<u8>), //todo add tokenid and classid
+		Transfer(T::AccountId, T::AccountId, Vec<u8>, (T::ClassId, T::TokenId)), //todo add tokenid and classid
 		BindAddress(T::AccountId, Vec<u8>, ChainType, Vec<u8>),
 	}
 
@@ -323,7 +323,13 @@ pub mod pallet {
 			);
 			<Domains<T>>::insert(&who, &domain);
 
-			Self::deposit_event(Event::DomainRegistered(who, domain, ethereum, deposit));
+			Self::deposit_event(Event::DomainRegistered(
+				who,
+				domain,
+				ethereum,
+				deposit,
+				(T::NftClassID::get(), token_id.into()),
+			));
 
 			Ok(().into())
 		}
@@ -341,7 +347,7 @@ pub mod pallet {
 			<Domains<T>>::remove(&who);
 			<T as pallet::Config>::Currency::unreserve(&who, domain_info.deposit);
 
-			Self::deposit_event(Event::DomainDeregistered(who, domain));
+			Self::deposit_event(Event::DomainDeregistered(who, domain, domain_info.nft_token));
 
 			Ok(().into())
 		}
@@ -384,7 +390,14 @@ pub mod pallet {
 				<Domains<T>>::remove(&who);
 				<Domains<T>>::insert(&to, &domain);
 
-				domain_info.native = to;
+				domain_info.native = to.clone();
+
+				Self::deposit_event(Event::Transfer(
+					who,
+					to,
+					domain.clone(),
+					domain_info.nft_token,
+				));
 
 				Ok(().into())
 			})?;
