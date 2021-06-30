@@ -34,6 +34,7 @@ pub use frame_support::{
 	PalletId, StorageValue,
 };
 use frame_system::limits::{BlockLength, BlockWeights};
+pub use nft::Call as NFTCall;
 use orml_traits::parameter_type_with_key;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_timestamp::Call as TimestampCall;
@@ -398,6 +399,7 @@ impl pallet_aura::Config for Runtime {
 parameter_types! {
 	pub DomainDeposit: Balance = 5 * NAME;
 	pub const MaxDomainLen: u32 = 64;
+	pub const NftClassID: u32 = 0;
 }
 
 impl domain_registrar::Config for Runtime {
@@ -406,6 +408,9 @@ impl domain_registrar::Config for Runtime {
 	type DomainDeposit = ();
 	type Event = Event;
 	type MaxDomainLen = MaxDomainLen;
+	type ClassData = nft::ClassData<Balance>;
+	type TokenData = nft::TokenData<Balance>;
+	type NftClassID = NftClassID;
 }
 
 parameter_types! {
@@ -582,8 +587,8 @@ construct_runtime! {
 		Currency: orml_currencies::{Pallet, Call, Event<T>},
 
 		// Polka Domain Modules
-		DomainRegistrar: domain_registrar::{Pallet, Call, Storage, Event<T>},
-		NFT: nft::{Pallet, Call, Storage, Event<T>},
+		DomainRegistrar: domain_registrar::{Pallet, Call, Storage, Event<T>, Config<T>},
+		NFT: nft::{Pallet, Call, Storage, Event<T>, Config<T>},
 		Order: order::{Pallet, Call, Storage, Event<T>},
 		Auction: auction::{Pallet, Call, Storage, Event<T>},
 

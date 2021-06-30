@@ -16,7 +16,7 @@
 // limitations under the License.
 
 use cumulus_primitives_core::ParaId;
-use parachain_runtime::{AccountId, AuraId, Signature};
+use parachain_runtime::{AccountId, AuraId, DomainRegistrarConfig, Signature};
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup};
 use sc_service::ChainType;
 use serde::{Deserialize, Serialize};
@@ -68,9 +68,7 @@ pub fn development_config(id: ParaId) -> ChainSpec {
 		move || {
 			genesis(
 				get_account_id_from_seed::<sr25519::Public>("Alice"),
-				vec![
-					get_from_seed::<AuraId>("Alice"),
-				],
+				vec![get_from_seed::<AuraId>("Alice")],
 				vec![
 					get_account_id_from_seed::<sr25519::Public>("Alice"),
 					get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
@@ -94,10 +92,7 @@ pub fn local_testnet_config(id: ParaId) -> ChainSpec {
 		move || {
 			genesis(
 				get_account_id_from_seed::<sr25519::Public>("Alice"),
-				vec![
-					get_from_seed::<AuraId>("Alice"),
-					get_from_seed::<AuraId>("Bob"),
-				],
+				vec![get_from_seed::<AuraId>("Alice"), get_from_seed::<AuraId>("Bob")],
 				vec![
 					get_account_id_from_seed::<sr25519::Public>("Alice"),
 					get_account_id_from_seed::<sr25519::Public>("Bob"),
@@ -123,10 +118,7 @@ pub fn genesis_config(id: ParaId) -> ChainSpec {
 		move || {
 			genesis(
 				get_account_id_from_seed::<sr25519::Public>("Alice"),
-				vec![
-					get_from_seed::<AuraId>("Alice"),
-					get_from_seed::<AuraId>("Bob"),
-				],
+				vec![get_from_seed::<AuraId>("Alice"), get_from_seed::<AuraId>("Bob")],
 				vec![
 					get_account_id_from_seed::<sr25519::Public>("Alice"),
 					get_account_id_from_seed::<sr25519::Public>("Bob"),
@@ -174,5 +166,13 @@ fn genesis(
 		cumulus_pallet_aura_ext: Default::default(),
 		orml_nft: Default::default(),
 		orml_tokens: Default::default(),
+		nft: Default::default(),
+		domain_registrar: DomainRegistrarConfig {
+			domains: vec![(
+				get_account_id_from_seed::<sr25519::Public>("Alice"),
+				br#"polkadot.domain"#.to_vec(),
+				br#"0x0000"#.to_vec(),
+			)],
+		},
 	}
 }

@@ -53,7 +53,8 @@
         "native": "AccountId",
         "relay": "Option<AccountId>",
         "ethereum": "Vec<u8>",
-        "deposit": "Balance"
+        "deposit": "Balance",
+        "nft_token": "(ClassId, TokenId)"
     },
     "TokenSymbol": {
         "_enum": {
