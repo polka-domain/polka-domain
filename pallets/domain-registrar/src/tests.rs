@@ -156,14 +156,14 @@ fn bind_address() {
 		assert_ok!(DomainModule::bind_address(
 			Origin::signed(1),
 			vec![1],
-			crate::ChainType::ETH,
+			crate::AddressChainType::ETH,
 			vec![3]
 		));
 
 		let event = Event::pallet_domain_registrar(crate::Event::BindAddress(
 			1,
 			vec![1],
-			crate::ChainType::ETH,
+			crate::AddressChainType::ETH,
 			vec![3],
 		));
 		assert_eq!(last_event(), event);

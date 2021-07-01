@@ -46,7 +46,7 @@ pub struct DomainInfo<AccountId, Balance, ClassId, TokenId> {
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug)]
-pub enum ChainType {
+pub enum AddressChainType {
 	BTC,
 	ETH,
 	DOT,
@@ -134,7 +134,7 @@ pub mod pallet {
 		DomainDeregistered(T::AccountId, Vec<u8>, (T::ClassId, T::TokenId)), //todo add tokenid and classid
 		Sent(T::AccountId, Vec<u8>),
 		Transfer(T::AccountId, T::AccountId, Vec<u8>, (T::ClassId, T::TokenId)), //todo add tokenid and classid
-		BindAddress(T::AccountId, Vec<u8>, ChainType, Vec<u8>),
+		BindAddress(T::AccountId, Vec<u8>, AddressChainType, Vec<u8>),
 	}
 
 	#[pallet::genesis_config]
@@ -409,7 +409,7 @@ pub mod pallet {
 		pub(super) fn bind_address(
 			origin: OriginFor<T>,
 			domain: Vec<u8>,
-			chain_type: ChainType,
+			chain_type: AddressChainType,
 			address: Vec<u8>,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
@@ -418,11 +418,11 @@ pub mod pallet {
 				if domain == <Domains<T>>::get(&who) {
 					DomainInfos::<T>::try_mutate(&domain, |domain_info| -> DispatchResult {
 						match chain_type {
-							ChainType::ETH => {
+							AddressChainType::ETH => {
 								domain_info.ethereum = address;
 							}
-							ChainType::DOT => {}
-							ChainType::DOGE => {}
+							AddressChainType::DOT => {}
+							AddressChainType::DOGE => {}
 							_ => {}
 						}
 						Self::deposit_event(Event::BindAddress(

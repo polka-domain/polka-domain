@@ -85,7 +85,7 @@
         "duration": "BlockNumber",
         "start_at": "BlockNumber"
     },
-    "ChainType": {
+    "AddressChainType": {
         "_enum": [
             "BTC",
             "ETH",
