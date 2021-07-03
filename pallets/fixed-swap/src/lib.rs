@@ -133,7 +133,7 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::weight(0)]
-		pub(super) fn create(
+		pub fn create(
 			origin: OriginFor<T>,
 			name: Vec<u8>,
 			token0: T::TokenId,
@@ -175,7 +175,7 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(0)]
-		pub(super) fn swap(
+		pub fn swap(
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			amount1: T::Balance,

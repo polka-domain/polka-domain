@@ -46,9 +46,7 @@ fn load_spec(
 		"polka-domain" => Box::new(chain_spec::ChainSpec::from_json_bytes(
 			&include_bytes!("../res/polka-domain.json")[..],
 		)?),
-		path => Box::new(chain_spec::ChainSpec::from_json_file(
-			std::path::PathBuf::from(path),
-		)?),
+		path => Box::new(chain_spec::ChainSpec::from_json_file(std::path::PathBuf::from(path))?),
 	})
 }
 
@@ -264,9 +262,6 @@ pub fn run() -> Result<()> {
 			let runner = cli.create_runner(&cli.run.normalize())?;
 
 			runner.run_node_until_exit(|config| async move {
-				// TODO
-				let key = sp_core::Pair::generate().0;
-
 				let para_id =
 					chain_spec::Extensions::try_get(&*config.chain_spec).map(|e| e.para_id);
 
@@ -295,7 +290,7 @@ pub fn run() -> Result<()> {
 				info!("Parachain Account: {}", parachain_account);
 				info!("Parachain genesis state: {}", genesis_state);
 				info!("Is collating: {}", if config.role.is_authority() { "yes" } else { "no" });
-				crate::service::start_parachain_node(config, key, polkadot_config, id)
+				crate::service::start_parachain_node(config, polkadot_config, id)
 					.await
 					.map(|r| r.0)
 					.map_err(Into::into)
