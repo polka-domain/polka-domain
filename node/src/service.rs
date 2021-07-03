@@ -20,36 +20,22 @@ use std::sync::Arc;
 use cumulus_client_consensus_aura::{
 	build_aura_consensus, BuildAuraConsensusParams, SlotProportion,
 };
-use cumulus_client_consensus_common::{
-	ParachainBlockImport, ParachainCandidate, ParachainConsensus,
-};
-use cumulus_client_consensus_relay_chain::Verifier as RelayChainVerifier;
+use cumulus_client_consensus_common::ParachainConsensus;
 use cumulus_client_network::build_block_announce_validator;
 use cumulus_client_service::{
 	prepare_node_config, start_collator, start_full_node, StartCollatorParams, StartFullNodeParams,
 };
-use cumulus_primitives_core::{
-	relay_chain::v1::{Hash as PHash, PersistedValidationData},
-	ParaId,
-};
-use futures::lock::Mutex;
+use cumulus_primitives_core::ParaId;
 use sc_client_api::ExecutorProvider;
 use sc_executor::native_executor_instance;
 pub use sc_executor::NativeExecutor;
 use sc_network::NetworkService;
 use sc_service::{Configuration, PartialComponents, Role, TFullBackend, TFullClient, TaskManager};
 use sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker, TelemetryWorkerHandle};
-use sp_api::{ApiExt, ConstructRuntimeApi};
-use sp_consensus::{
-	import_queue::{BasicQueue, CacheKeyId, Verifier as VerifierT},
-	BlockImportParams, BlockOrigin, SlotData,
-};
-use sp_consensus_aura::{sr25519::AuthorityId as AuraId, AuraApi};
+use sp_api::ConstructRuntimeApi;
+use sp_consensus::SlotData;
 use sp_keystore::SyncCryptoStorePtr;
-use sp_runtime::{
-	generic::BlockId,
-	traits::{BlakeTwo256, Header as HeaderT},
-};
+use sp_runtime::traits::BlakeTwo256;
 use substrate_prometheus_endpoint::Registry;
 
 type BlockNumber = u32;
