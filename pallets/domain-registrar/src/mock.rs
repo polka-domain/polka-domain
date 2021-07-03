@@ -22,6 +22,7 @@ use frame_support::{
 	PalletId,
 };
 use frame_system as system;
+use frame_system::Call as SystemCall;
 use primitives::Balance;
 use sp_core::H256;
 use sp_runtime::{
@@ -31,8 +32,6 @@ use sp_runtime::{
 
 use super::*;
 use crate as pallet_domain_registrar;
-
-use frame_system::Call as SystemCall;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
 type Block = frame_system::mocking::MockBlock<Runtime>;
@@ -205,13 +204,13 @@ parameter_types! {
 
 impl pallet_domain_registrar::Config for Runtime {
 	type Call = Call;
+	type ClassData = nft::ClassData<Balance>;
 	type Currency = Balances;
 	type DomainDeposit = DomainDeposit;
 	type Event = Event;
 	type MaxDomainLen = MaxDomainLen;
-	type ClassData = nft::ClassData<Balance>;
-	type TokenData = nft::TokenData<Balance>;
 	type NftClassID = NftClassID;
+	type TokenData = nft::TokenData<Balance>;
 }
 
 pub type BalancesCall = pallet_balances::Call<Runtime>;

@@ -174,7 +174,7 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::weight(1000)]
-		pub(super) fn create_auction(
+		pub fn create_auction(
 			origin: OriginFor<T>,
 			token0: (T::ClassId, T::TokenId),
 			token1: CurrencyId,
@@ -218,7 +218,7 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(1000)]
-		pub(super) fn bid_auction(
+		pub fn bid_auction(
 			origin: OriginFor<T>,
 			auction_id: T::AuctionId,
 			amount1: T::Balance,
@@ -247,10 +247,7 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(1000)]
-		pub(super) fn cancel_auction(
-			origin: OriginFor<T>,
-			auction_id: T::AuctionId,
-		) -> DispatchResult {
+		pub fn cancel_auction(origin: OriginFor<T>, auction_id: T::AuctionId) -> DispatchResult {
 			let creator = ensure_signed(origin)?;
 			let auction = Auction::<T>::get(auction_id);
 			ensure!(creator == auction.creator, Error::<T>::InvalidCreator);

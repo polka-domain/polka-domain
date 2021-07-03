@@ -132,7 +132,7 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::weight(1000)]
-		pub(super) fn make_order(
+		pub fn make_order(
 			origin: OriginFor<T>,
 			token0: (T::ClassId, T::TokenId),
 			token1: CurrencyId,
@@ -155,7 +155,7 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(1000)]
-		pub(super) fn cancel_order(origin: OriginFor<T>, order_id: T::OrderId) -> DispatchResult {
+		pub fn cancel_order(origin: OriginFor<T>, order_id: T::OrderId) -> DispatchResult {
 			let maker = ensure_signed(origin)?;
 			let order = Order::<T>::get(order_id);
 			ensure!(maker == order.maker, Error::<T>::InvalidCreator);
@@ -170,7 +170,7 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(1000)]
-		pub(super) fn take_order(
+		pub fn take_order(
 			origin: OriginFor<T>,
 			order_id: T::OrderId,
 			amount1: T::Balance,
@@ -190,7 +190,4 @@ pub mod pallet {
 			Ok(())
 		}
 	}
-
-	#[pallet::hooks]
-	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
 }

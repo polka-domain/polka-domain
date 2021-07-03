@@ -130,10 +130,10 @@ pub mod pallet {
 	#[pallet::metadata(T::AccountId = "AccountId", BalanceOf<T> = "Balance", ClassIdOf<T> = "ClassId", TokenIdOf<T> = "TokenId")]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		DomainRegistered(T::AccountId, Vec<u8>, Vec<u8>, BalanceOf<T>, (T::ClassId, T::TokenId)), //todo add tokenid and classid
-		DomainDeregistered(T::AccountId, Vec<u8>, (T::ClassId, T::TokenId)), //todo add tokenid and classid
+		DomainRegistered(T::AccountId, Vec<u8>, Vec<u8>, BalanceOf<T>, (T::ClassId, T::TokenId)), /* todo add tokenid and classid */
+		DomainDeregistered(T::AccountId, Vec<u8>, (T::ClassId, T::TokenId)), /* todo add tokenid and classid */
 		Sent(T::AccountId, Vec<u8>),
-		Transfer(T::AccountId, T::AccountId, Vec<u8>, (T::ClassId, T::TokenId)), //todo add tokenid and classid
+		Transfer(T::AccountId, T::AccountId, Vec<u8>, (T::ClassId, T::TokenId)), /* todo add tokenid and classid */
 		BindAddress(T::AccountId, Vec<u8>, AddressChainType, Vec<u8>),
 	}
 
@@ -154,7 +154,7 @@ pub mod pallet {
 		fn build(&self) {
 			self.domains.iter().for_each(|_item| {
 				let who = &_item.0;
-				let next_id = orml_nft::Pallet::<T>::next_class_id(); //todo just use one class id
+				let next_id = orml_nft::Pallet::<T>::next_class_id(); // todo just use one class id
 				let owner: T::AccountId =
 					<T as nft::Config>::PalletId::get().into_sub_account(next_id);
 				let class_deposit = <T as nft::Config>::CreateClassDeposit::get();
@@ -259,7 +259,7 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::weight(0)]
-		pub(super) fn register(
+		pub fn register(
 			origin: OriginFor<T>,
 			domain: Vec<u8>,
 			ethereum: Vec<u8>,
@@ -335,10 +335,7 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(0)]
-		pub(super) fn deregister(
-			origin: OriginFor<T>,
-			domain: Vec<u8>,
-		) -> DispatchResultWithPostInfo {
+		pub fn deregister(origin: OriginFor<T>, domain: Vec<u8>) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin.clone())?;
 
 			let domain_info = <DomainInfos<T>>::take(&domain);
@@ -353,7 +350,7 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(0)]
-		pub(super) fn send(
+		pub fn send(
 			origin: OriginFor<T>,
 			target: T::AccountId,
 			_target_domain: Vec<u8>,
@@ -373,7 +370,7 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(0)]
-		pub(super) fn transfer(
+		pub fn transfer(
 			origin: OriginFor<T>,
 			to: T::AccountId,
 			domain: Vec<u8>,
@@ -406,7 +403,7 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(0)]
-		pub(super) fn bind_address(
+		pub fn bind_address(
 			origin: OriginFor<T>,
 			domain: Vec<u8>,
 			chain_type: AddressChainType,

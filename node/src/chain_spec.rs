@@ -151,21 +151,22 @@ fn genesis(
 	id: ParaId,
 ) -> parachain_runtime::GenesisConfig {
 	parachain_runtime::GenesisConfig {
-		frame_system: parachain_runtime::SystemConfig {
+		system: parachain_runtime::SystemConfig {
 			code: parachain_runtime::WASM_BINARY
 				.expect("WASM binary was not build, please build it!")
 				.to_vec(),
 			changes_trie_config: Default::default(),
 		},
-		pallet_balances: parachain_runtime::BalancesConfig {
+		balances: parachain_runtime::BalancesConfig {
 			balances: endowed_accounts.iter().cloned().map(|k| (k, 1 << 60)).collect(),
 		},
-		pallet_sudo: parachain_runtime::SudoConfig { key: root_key },
+		sudo: parachain_runtime::SudoConfig { key: root_key },
 		parachain_info: parachain_runtime::ParachainInfoConfig { parachain_id: id },
-		pallet_aura: parachain_runtime::AuraConfig { authorities: initial_authorities },
-		cumulus_pallet_aura_ext: Default::default(),
+		aura: parachain_runtime::AuraConfig { authorities: initial_authorities },
+		aura_ext: Default::default(),
+		parachain_system: Default::default(),
 		orml_nft: Default::default(),
-		orml_tokens: Default::default(),
+		tokens: Default::default(),
 		nft: Default::default(),
 		domain_registrar: DomainRegistrarConfig {
 			domains: vec![(
