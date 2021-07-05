@@ -52,7 +52,10 @@
     "DomainInfo": {
         "native": "AccountId",
         "relay": "Option<AccountId>",
+        "bitcoin": "Vec<u8>",
         "ethereum": "Vec<u8>",
+        "polkadot": "Vec<u8>",
+        "kusama": "Vec<u8>",
         "deposit": "Balance",
         "nft_token": "(ClassId, TokenId)"
     },
@@ -90,7 +93,7 @@
             "BTC",
             "ETH",
             "DOT",
-            "DOGE"
+            "KSM"
         ]
     }
 }

@@ -18,7 +18,7 @@
 
 use frame_support::{
 	parameter_types,
-	traits::{Filter, InstanceFilter},
+	traits::{Filter, InstanceFilter, MaxEncodedLen},
 	PalletId,
 };
 use frame_system as system;
@@ -95,6 +95,8 @@ impl pallet_balances::Config for Runtime {
 	type Event = Event;
 	type ExistentialDeposit = ExistentialDeposit;
 	type MaxLocks = ();
+	type MaxReserves = ();
+	type ReserveIdentifier = [u8; 8];
 	type WeightInfo = ();
 }
 
@@ -112,7 +114,9 @@ parameter_types! {
 	pub const AnnouncementDepositBase: u64 = 1;
 	pub const AnnouncementDepositFactor: u64 = 1;
 }
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, RuntimeDebug)]
+#[derive(
+	Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, MaxEncodedLen, RuntimeDebug,
+)]
 pub enum ProxyType {
 	Any,
 	JustTransfer,

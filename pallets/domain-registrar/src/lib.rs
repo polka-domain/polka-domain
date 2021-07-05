@@ -40,7 +40,10 @@ mod tests;
 pub struct DomainInfo<AccountId, Balance, ClassId, TokenId> {
 	native: AccountId,
 	relay: Option<AccountId>,
+	bitcoin: Vec<u8>,
 	ethereum: Vec<u8>,
+	polkadot: Vec<u8>,
+	kusama: Vec<u8>,
 	deposit: Balance,
 	nft_token: (ClassId, TokenId),
 }
@@ -50,7 +53,7 @@ pub enum AddressChainType {
 	BTC,
 	ETH,
 	DOT,
-	DOGE,
+	KSM,
 }
 
 pub type TokenIdOf<T> = <T as orml_nft::Config>::TokenId;
@@ -250,7 +253,8 @@ pub mod pallet {
 	pub enum Error<T> {
 		InvalidDomainLength,
 		InvalidTarget,
-		DomainExist,
+		DomainMustExist,
+		UnSupportChainType,
 	}
 
 	#[pallet::hooks]
@@ -272,7 +276,7 @@ pub mod pallet {
 				Error::<T>::InvalidDomainLength
 			);
 
-			ensure!(!DomainInfos::<T>::contains_key(&domain), Error::<T>::DomainExist);
+			ensure!(!DomainInfos::<T>::contains_key(&domain), Error::<T>::DomainMustExist);
 
 			let token_id = orml_nft::Pallet::<T>::next_token_id(T::NftClassID::get());
 			let owner: T::AccountId = T::PalletId::get().into_sub_account(token_id);
@@ -316,7 +320,10 @@ pub mod pallet {
 				DomainInfo {
 					native: who.clone(),
 					relay,
+					bitcoin: Vec::new(),
 					ethereum: ethereum.clone(),
+					polkadot: Vec::new(),
+					kusama: Vec::new(),
 					deposit,
 					nft_token: (T::NftClassID::get(), token_id.into()),
 				},
@@ -415,18 +422,27 @@ pub mod pallet {
 				if domain == <Domains<T>>::get(&who) {
 					DomainInfos::<T>::try_mutate(&domain, |domain_info| -> DispatchResult {
 						match chain_type {
-							AddressChainType::ETH => {
-								domain_info.ethereum = address;
+							AddressChainType::BTC => {
+								domain_info.bitcoin = address.clone();
 							}
-							AddressChainType::DOT => {}
-							AddressChainType::DOGE => {}
-							_ => {}
+							AddressChainType::ETH => {
+								domain_info.ethereum = address.clone();
+							}
+							AddressChainType::DOT => {
+								domain_info.polkadot = address.clone();
+							}
+							AddressChainType::KSM => {
+								domain_info.kusama = address.clone();
+							}
+							_ => {
+								Err(Error::<T>::UnSupportChainType)?;
+							}
 						}
 						Self::deposit_event(Event::BindAddress(
 							who,
 							domain.clone(),
 							chain_type,
-							domain_info.ethereum.clone(),
+							address,
 						));
 
 						Ok(())
