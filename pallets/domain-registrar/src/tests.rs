@@ -54,11 +54,10 @@ fn test_register() {
 			crate::DomainInfos::<Runtime>::get(vec![1]),
 			crate::DomainInfo {
 				native: 1,
-				relay: Some(1),
-				bitcoin: Vec::new(),
-				ethereum: vec![2],
-				polkadot: Vec::new(),
-				kusama: Vec::new(),
+				bitcoin: None,
+				ethereum: Some(vec![2]),
+				polkadot: None,
+				kusama: None,
 				deposit: 1,
 				nft_token: (0, 1)
 			}
@@ -154,7 +153,7 @@ fn bind_address() {
 			crate::DomainInfos::<Runtime>::get(vec![1]).nft_token,
 		));
 		assert_eq!(last_event(), event);
-		assert_eq!(crate::DomainInfos::<Runtime>::get(vec![1]).ethereum, vec![2]);
+		assert_eq!(crate::DomainInfos::<Runtime>::get(vec![1]).ethereum, Some(vec![2]));
 
 		assert_ok!(DomainModule::bind_address(
 			Origin::signed(1),
@@ -170,7 +169,7 @@ fn bind_address() {
 			vec![3],
 		));
 		assert_eq!(last_event(), event);
-		assert_eq!(crate::DomainInfos::<Runtime>::get(vec![1]).ethereum, vec![3]);
+		assert_eq!(crate::DomainInfos::<Runtime>::get(vec![1]).ethereum, Some(vec![3]));
 
 		assert_ok!(DomainModule::bind_address(
 			Origin::signed(1),
@@ -185,6 +184,6 @@ fn bind_address() {
 			vec![4],
 		));
 		assert_eq!(last_event(), event);
-		assert_eq!(crate::DomainInfos::<Runtime>::get(vec![1]).bitcoin, vec![4]);
+		assert_eq!(crate::DomainInfos::<Runtime>::get(vec![1]).bitcoin, Some(vec![4]));
 	});
 }

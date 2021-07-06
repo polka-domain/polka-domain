@@ -39,11 +39,10 @@ mod tests;
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, RuntimeDebug)]
 pub struct DomainInfo<AccountId, Balance, ClassId, TokenId> {
 	native: AccountId,
-	relay: Option<AccountId>,
-	bitcoin: Vec<u8>,
-	ethereum: Vec<u8>,
-	polkadot: Vec<u8>,
-	kusama: Vec<u8>,
+	bitcoin: Option<Vec<u8>>,
+	ethereum: Option<Vec<u8>>,
+	polkadot: Option<AccountId>,
+	kusama: Option<AccountId>,
 	deposit: Balance,
 	nft_token: (ClassId, TokenId),
 }
@@ -319,11 +318,10 @@ pub mod pallet {
 				&domain,
 				DomainInfo {
 					native: who.clone(),
-					relay,
-					bitcoin: Vec::new(),
-					ethereum: ethereum.clone(),
-					polkadot: Vec::new(),
-					kusama: Vec::new(),
+					bitcoin: None,
+					ethereum: Some(ethereum.clone()),
+					polkadot: None,
+					kusama: None,
 					deposit,
 					nft_token: (T::NftClassID::get(), token_id.into()),
 				},
@@ -423,16 +421,24 @@ pub mod pallet {
 					DomainInfos::<T>::try_mutate(&domain, |domain_info| -> DispatchResult {
 						match chain_type {
 							AddressChainType::BTC => {
-								domain_info.bitcoin = address.clone();
+								domain_info.bitcoin = Some(address.clone());
 							}
 							AddressChainType::ETH => {
-								domain_info.ethereum = address.clone();
+								domain_info.ethereum = Some(address.clone());
 							}
 							AddressChainType::DOT => {
-								domain_info.polkadot = address.clone();
+								let new_address = address.clone(); //32 bytes
+								let dest =
+									T::AccountId::decode(&mut &new_address[..]).unwrap_or_default();
+
+								domain_info.polkadot = Some(dest);
 							}
 							AddressChainType::KSM => {
-								domain_info.kusama = address.clone();
+								let new_address = address.clone(); //32 bytes
+								let dest =
+									T::AccountId::decode(&mut &new_address[..]).unwrap_or_default();
+
+								domain_info.kusama = Some(dest);
 							}
 							_ => {
 								Err(Error::<T>::UnSupportChainType)?;
@@ -442,7 +448,7 @@ pub mod pallet {
 							who,
 							domain.clone(),
 							chain_type,
-							address,
+							address.clone(),
 						));
 
 						Ok(())

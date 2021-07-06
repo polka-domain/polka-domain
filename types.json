@@ -51,11 +51,10 @@
     },
     "DomainInfo": {
         "native": "AccountId",
-        "relay": "Option<AccountId>",
-        "bitcoin": "Vec<u8>",
-        "ethereum": "Vec<u8>",
-        "polkadot": "Vec<u8>",
-        "kusama": "Vec<u8>",
+        "bitcoin": "Option<Vec<u8>>",
+        "ethereum": "Option<Vec<u8>>",
+        "polkadot": "Option<AccountId>",
+        "kusama": "Option<AccountId>",
         "deposit": "Balance",
         "nft_token": "(ClassId, TokenId)"
     },
