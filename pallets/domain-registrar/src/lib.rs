@@ -39,8 +39,10 @@ mod tests;
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, RuntimeDebug)]
 pub struct DomainInfo<AccountId, Balance, ClassId, TokenId> {
 	native: AccountId,
-	relay: Option<AccountId>,
-	ethereum: Vec<u8>,
+	bitcoin: Option<Vec<u8>>,
+	ethereum: Option<Vec<u8>>,
+	polkadot: Option<AccountId>,
+	kusama: Option<AccountId>,
 	deposit: Balance,
 	nft_token: (ClassId, TokenId),
 }
@@ -50,7 +52,7 @@ pub enum AddressChainType {
 	BTC,
 	ETH,
 	DOT,
-	DOGE,
+	KSM,
 }
 
 pub type TokenIdOf<T> = <T as orml_nft::Config>::TokenId;
@@ -250,7 +252,8 @@ pub mod pallet {
 	pub enum Error<T> {
 		InvalidDomainLength,
 		InvalidTarget,
-		DomainExist,
+		DomainMustExist,
+		UnSupportChainType,
 	}
 
 	#[pallet::hooks]
@@ -272,7 +275,7 @@ pub mod pallet {
 				Error::<T>::InvalidDomainLength
 			);
 
-			ensure!(!DomainInfos::<T>::contains_key(&domain), Error::<T>::DomainExist);
+			ensure!(!DomainInfos::<T>::contains_key(&domain), Error::<T>::DomainMustExist);
 
 			let token_id = orml_nft::Pallet::<T>::next_token_id(T::NftClassID::get());
 			let owner: T::AccountId = T::PalletId::get().into_sub_account(token_id);
@@ -315,8 +318,10 @@ pub mod pallet {
 				&domain,
 				DomainInfo {
 					native: who.clone(),
-					relay,
-					ethereum: ethereum.clone(),
+					bitcoin: None,
+					ethereum: Some(ethereum.clone()),
+					polkadot: None,
+					kusama: None,
 					deposit,
 					nft_token: (T::NftClassID::get(), token_id.into()),
 				},
@@ -415,18 +420,35 @@ pub mod pallet {
 				if domain == <Domains<T>>::get(&who) {
 					DomainInfos::<T>::try_mutate(&domain, |domain_info| -> DispatchResult {
 						match chain_type {
-							AddressChainType::ETH => {
-								domain_info.ethereum = address;
+							AddressChainType::BTC => {
+								domain_info.bitcoin = Some(address.clone());
 							}
-							AddressChainType::DOT => {}
-							AddressChainType::DOGE => {}
-							_ => {}
+							AddressChainType::ETH => {
+								domain_info.ethereum = Some(address.clone());
+							}
+							AddressChainType::DOT => {
+								let new_address = address.clone(); //32 bytes
+								let dest =
+									T::AccountId::decode(&mut &new_address[..]).unwrap_or_default();
+
+								domain_info.polkadot = Some(dest);
+							}
+							AddressChainType::KSM => {
+								let new_address = address.clone(); //32 bytes
+								let dest =
+									T::AccountId::decode(&mut &new_address[..]).unwrap_or_default();
+
+								domain_info.kusama = Some(dest);
+							}
+							_ => {
+								Err(Error::<T>::UnSupportChainType)?;
+							}
 						}
 						Self::deposit_event(Event::BindAddress(
 							who,
 							domain.clone(),
 							chain_type,
-							domain_info.ethereum.clone(),
+							address.clone(),
 						));
 
 						Ok(())
