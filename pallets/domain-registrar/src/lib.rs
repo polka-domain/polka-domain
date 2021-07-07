@@ -266,7 +266,6 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			domain: Vec<u8>,
 			ethereum: Vec<u8>,
-			relay: Option<T::AccountId>,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin.clone())?;
 
