@@ -132,7 +132,16 @@ pub mod pallet {
 	#[pallet::metadata(T::AccountId = "AccountId", BalanceOf<T> = "Balance", ClassIdOf<T> = "ClassId", TokenIdOf<T> = "TokenId")]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		DomainRegistered(T::AccountId, Vec<u8>, Vec<u8>, BalanceOf<T>, (T::ClassId, T::TokenId)), /* todo add tokenid and classid */
+		DomainRegistered(
+			T::AccountId,
+			Vec<u8>,
+			Option<Vec<u8>>,
+			Option<Vec<u8>>,
+			Option<Vec<u8>>,
+			Option<Vec<u8>>,
+			BalanceOf<T>,
+			(T::ClassId, T::TokenId),
+		), /* todo add tokenid and classid */
 		DomainDeregistered(T::AccountId, Vec<u8>, (T::ClassId, T::TokenId)), /* todo add tokenid and classid */
 		Sent(T::AccountId, Vec<u8>),
 		Transfer(T::AccountId, T::AccountId, Vec<u8>, (T::ClassId, T::TokenId)), /* todo add tokenid and classid */
@@ -265,8 +274,10 @@ pub mod pallet {
 		pub fn register(
 			origin: OriginFor<T>,
 			domain: Vec<u8>,
-			ethereum: Vec<u8>,
-			relay: Option<T::AccountId>,
+			bitcoin: Option<Vec<u8>>,
+			ethereum: Option<Vec<u8>>,
+			polkadot: Option<Vec<u8>>,
+			kusama: Option<Vec<u8>>,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin.clone())?;
 
@@ -312,16 +323,25 @@ pub mod pallet {
 				token_data.clone(),
 			)?;
 
+			let polkadot_dest = match polkadot.clone() {
+				Some(address) => Some(T::AccountId::decode(&mut &address[..]).unwrap_or_default()),
+				None => None,
+			};
+			let kusama_dest = match kusama.clone() {
+				Some(address) => Some(T::AccountId::decode(&mut &address[..]).unwrap_or_default()),
+				None => None,
+			};
+
 			let deposit = T::DomainDeposit::get();
 			<T as pallet::Config>::Currency::reserve(&who, deposit)?;
 			<DomainInfos<T>>::insert(
 				&domain,
 				DomainInfo {
 					native: who.clone(),
-					bitcoin: None,
-					ethereum: Some(ethereum.clone()),
-					polkadot: None,
-					kusama: None,
+					bitcoin: bitcoin.clone(),
+					ethereum: ethereum.clone(),
+					polkadot: polkadot_dest,
+					kusama: kusama_dest,
 					deposit,
 					nft_token: (T::NftClassID::get(), token_id.into()),
 				},
@@ -331,7 +351,10 @@ pub mod pallet {
 			Self::deposit_event(Event::DomainRegistered(
 				who,
 				domain,
+				bitcoin,
 				ethereum,
+				polkadot,
+				kusama,
 				deposit,
 				(T::NftClassID::get(), token_id.into()),
 			));

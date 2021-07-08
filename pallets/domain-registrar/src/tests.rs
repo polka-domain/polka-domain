@@ -27,23 +27,42 @@ fn test_register() {
 			DomainModule::register(
 				Origin::signed(1),
 				vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
-				vec![2],
-				Some(1)
+				Some(vec![2]),
+				Some(vec![3]),
+				Some(vec![4]),
+				Some(vec![5]),
 			),
 			Error::<Runtime>::InvalidDomainLength
 		);
 
-		assert_ok!(DomainModule::register(Origin::signed(1), vec![1], vec![2], Some(1)));
+		assert_ok!(DomainModule::register(
+			Origin::signed(1),
+			vec![1],
+			Some(vec![2]),
+			Some(vec![3]),
+			Some(vec![4]),
+			Some(vec![5]),
+		));
 
 		assert_noop!(
-			DomainModule::register(Origin::signed(1), vec![1], vec![2], Some(1)),
+			DomainModule::register(
+				Origin::signed(1),
+				vec![1],
+				Some(vec![2]),
+				Some(vec![3]),
+				Some(vec![4]),
+				Some(vec![5])
+			),
 			Error::<Runtime>::DomainMustExist
 		);
 
 		let event = Event::DomainModule(crate::Event::DomainRegistered(
 			1,
 			vec![1],
-			vec![2],
+			Some(vec![2]),
+			Some(vec![3]),
+			Some(vec![4]),
+			Some(vec![5]),
 			1,
 			crate::DomainInfos::<Runtime>::get(vec![1]).nft_token,
 		));
@@ -54,10 +73,10 @@ fn test_register() {
 			crate::DomainInfos::<Runtime>::get(vec![1]),
 			crate::DomainInfo {
 				native: 1,
-				bitcoin: None,
-				ethereum: Some(vec![2]),
-				polkadot: None,
-				kusama: None,
+				bitcoin: Some(vec![2]),
+				ethereum: Some(vec![3]),
+				polkadot: Some(0), //todo only vec<u8> 32 can convert to AccountId
+				kusama: Some(0),   //todo only vec<u8> 32 can convert to AccountId
 				deposit: 1,
 				nft_token: (0, 1)
 			}
@@ -68,12 +87,22 @@ fn test_register() {
 #[test]
 fn deregister() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(DomainModule::register(Origin::signed(1), vec![1], vec![2], Some(1)));
+		assert_ok!(DomainModule::register(
+			Origin::signed(1),
+			vec![1],
+			Some(vec![2]),
+			Some(vec![3]),
+			Some(vec![4]),
+			Some(vec![5])
+		));
 
 		let event = Event::DomainModule(crate::Event::DomainRegistered(
 			1,
 			vec![1],
-			vec![2],
+			Some(vec![2]),
+			Some(vec![3]),
+			Some(vec![4]),
+			Some(vec![5]),
 			1,
 			crate::DomainInfos::<Runtime>::get(vec![1]).nft_token,
 		));
@@ -95,12 +124,22 @@ fn deregister() {
 #[test]
 fn send() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(DomainModule::register(Origin::signed(1), vec![1], vec![2], Some(1)));
+		assert_ok!(DomainModule::register(
+			Origin::signed(1),
+			vec![1],
+			Some(vec![2]),
+			Some(vec![3]),
+			Some(vec![4]),
+			Some(vec![5])
+		));
 
 		let event = Event::DomainModule(crate::Event::DomainRegistered(
 			1,
 			vec![1],
-			vec![2],
+			Some(vec![2]),
+			Some(vec![3]),
+			Some(vec![4]),
+			Some(vec![5]),
 			1,
 			crate::DomainInfos::<Runtime>::get(vec![1]).nft_token,
 		));
@@ -117,12 +156,22 @@ fn send() {
 #[test]
 fn transfer() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(DomainModule::register(Origin::signed(1), vec![1], vec![2], Some(1)));
+		assert_ok!(DomainModule::register(
+			Origin::signed(1),
+			vec![1],
+			Some(vec![2]),
+			Some(vec![3]),
+			Some(vec![4]),
+			Some(vec![5])
+		));
 
 		let event = Event::DomainModule(crate::Event::DomainRegistered(
 			1,
 			vec![1],
-			vec![2],
+			Some(vec![2]),
+			Some(vec![3]),
+			Some(vec![4]),
+			Some(vec![5]),
 			1,
 			crate::DomainInfos::<Runtime>::get(vec![1]).nft_token,
 		));
@@ -143,17 +192,27 @@ fn transfer() {
 #[test]
 fn bind_address() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(DomainModule::register(Origin::signed(1), vec![1], vec![2], Some(1)));
+		assert_ok!(DomainModule::register(
+			Origin::signed(1),
+			vec![1],
+			Some(vec![1]),
+			Some(vec![1]),
+			Some(vec![1]),
+			Some(vec![1])
+		));
 
 		let event = Event::DomainModule(crate::Event::DomainRegistered(
 			1,
 			vec![1],
-			vec![2],
+			Some(vec![1]),
+			Some(vec![1]),
+			Some(vec![1]),
+			Some(vec![1]),
 			1,
 			crate::DomainInfos::<Runtime>::get(vec![1]).nft_token,
 		));
 		assert_eq!(last_event(), event);
-		assert_eq!(crate::DomainInfos::<Runtime>::get(vec![1]).ethereum, Some(vec![2]));
+		assert_eq!(crate::DomainInfos::<Runtime>::get(vec![1]).ethereum, Some(vec![1]));
 
 		assert_ok!(DomainModule::bind_address(
 			Origin::signed(1),
