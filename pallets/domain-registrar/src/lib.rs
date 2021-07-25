@@ -24,9 +24,10 @@ use frame_support::{
 	weights::GetDispatchInfo,
 };
 pub use pallet::*;
+pub use primitives::AccountIndex;
 use sp_runtime::{
 	traits::{AccountIdConversion, Dispatchable, Saturating, StaticLookup, Zero},
-	RuntimeDebug,
+	MultiAddress, RuntimeDebug,
 };
 use sp_std::prelude::*;
 
@@ -37,12 +38,12 @@ mod mock;
 mod tests;
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, RuntimeDebug)]
-pub struct DomainInfo<AccountId, Balance, ClassId, TokenId> {
+pub struct DomainInfo<AccountId, Balance, ClassId, TokenId, MultiAddress> {
 	native: AccountId,
-	bitcoin: Option<Vec<u8>>,
-	ethereum: Option<Vec<u8>>,
-	polkadot: Option<AccountId>,
-	kusama: Option<AccountId>,
+	bitcoin: Option<MultiAddress>,
+	ethereum: Option<MultiAddress>,
+	polkadot: Option<MultiAddress>,
+	kusama: Option<MultiAddress>,
 	deposit: Balance,
 	nft_token: (ClassId, TokenId),
 }
@@ -118,7 +119,13 @@ pub mod pallet {
 		_,
 		Blake2_128Concat,
 		Vec<u8>,
-		DomainInfo<T::AccountId, BalanceOf<T>, ClassIdOf<T>, TokenIdOf<T>>,
+		DomainInfo<
+			T::AccountId,
+			BalanceOf<T>,
+			ClassIdOf<T>,
+			TokenIdOf<T>,
+			MultiAddress<T::AccountId, AccountIndex>,
+		>,
 		ValueQuery,
 	>;
 
@@ -135,17 +142,24 @@ pub mod pallet {
 		DomainRegistered(
 			T::AccountId,
 			Vec<u8>,
-			Option<Vec<u8>>,
-			Option<Vec<u8>>,
-			Option<Vec<u8>>,
-			Option<Vec<u8>>,
+			Option<[u8; 32]>,
+			Option<[u8; 20]>,
+			Option<T::AccountId>,
+			Option<T::AccountId>,
 			BalanceOf<T>,
 			(T::ClassId, T::TokenId),
 		), /* todo add tokenid and classid */
 		DomainDeregistered(T::AccountId, Vec<u8>, (T::ClassId, T::TokenId)), /* todo add tokenid and classid */
 		Sent(T::AccountId, Vec<u8>),
 		Transfer(T::AccountId, T::AccountId, Vec<u8>, (T::ClassId, T::TokenId)), /* todo add tokenid and classid */
-		BindAddress(T::AccountId, Vec<u8>, AddressChainType, Vec<u8>),
+		BindAddress(
+			T::AccountId,
+			Vec<u8>,
+			Option<[u8; 32]>,
+			Option<[u8; 20]>,
+			Option<T::AccountId>,
+			Option<T::AccountId>,
+		),
 	}
 
 	#[pallet::genesis_config]
@@ -262,7 +276,6 @@ pub mod pallet {
 		InvalidDomainLength,
 		InvalidTarget,
 		DomainMustExist,
-		UnSupportChainType,
 	}
 
 	#[pallet::hooks]
@@ -274,10 +287,10 @@ pub mod pallet {
 		pub fn register(
 			origin: OriginFor<T>,
 			domain: Vec<u8>,
-			bitcoin: Option<Vec<u8>>,
-			ethereum: Option<Vec<u8>>,
-			polkadot: Option<Vec<u8>>,
-			kusama: Option<Vec<u8>>,
+			bitcoin: Option<[u8; 32]>,
+			ethereum: Option<[u8; 20]>,
+			polkadot: Option<T::AccountId>,
+			kusama: Option<T::AccountId>,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin.clone())?;
 
@@ -323,25 +336,16 @@ pub mod pallet {
 				token_data.clone(),
 			)?;
 
-			let polkadot_dest = match polkadot.clone() {
-				Some(address) => Some(T::AccountId::decode(&mut &address[..]).unwrap_or_default()),
-				None => None,
-			};
-			let kusama_dest = match kusama.clone() {
-				Some(address) => Some(T::AccountId::decode(&mut &address[..]).unwrap_or_default()),
-				None => None,
-			};
-
 			let deposit = T::DomainDeposit::get();
 			<T as pallet::Config>::Currency::reserve(&who, deposit)?;
 			<DomainInfos<T>>::insert(
 				&domain,
 				DomainInfo {
 					native: who.clone(),
-					bitcoin: bitcoin.clone(),
-					ethereum: ethereum.clone(),
-					polkadot: polkadot_dest,
-					kusama: kusama_dest,
+					bitcoin: Some(MultiAddress::Address32(bitcoin.unwrap_or_default())),
+					ethereum: Some(MultiAddress::Address20(ethereum.unwrap_or_default())),
+					polkadot: Some(MultiAddress::Id(polkadot.clone().unwrap_or_default())),
+					kusama: Some(MultiAddress::Id(kusama.clone().unwrap_or_default())),
 					deposit,
 					nft_token: (T::NftClassID::get(), token_id.into()),
 				},
@@ -434,44 +438,47 @@ pub mod pallet {
 		pub fn bind_address(
 			origin: OriginFor<T>,
 			domain: Vec<u8>,
-			chain_type: AddressChainType,
-			address: Vec<u8>,
+			bitcoin: Option<[u8; 32]>,
+			ethereum: Option<[u8; 20]>,
+			polkadot: Option<T::AccountId>,
+			kusama: Option<T::AccountId>,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
 
 			if Domains::<T>::contains_key(&who) {
 				if domain == <Domains<T>>::get(&who) {
 					DomainInfos::<T>::try_mutate(&domain, |domain_info| -> DispatchResult {
-						match chain_type {
-							AddressChainType::BTC => {
-								domain_info.bitcoin = Some(address.clone());
-							}
-							AddressChainType::ETH => {
-								domain_info.ethereum = Some(address.clone());
-							}
-							AddressChainType::DOT => {
-								let new_address = address.clone(); //32 bytes
-								let dest =
-									T::AccountId::decode(&mut &new_address[..]).unwrap_or_default();
-
-								domain_info.polkadot = Some(dest);
-							}
-							AddressChainType::KSM => {
-								let new_address = address.clone(); //32 bytes
-								let dest =
-									T::AccountId::decode(&mut &new_address[..]).unwrap_or_default();
-
-								domain_info.kusama = Some(dest);
-							}
-							_ => {
-								Err(Error::<T>::UnSupportChainType)?;
-							}
+						if let Some(address) = bitcoin {
+							domain_info.bitcoin = Some(MultiAddress::Address32(address));
+						} else {
+							domain_info.bitcoin = None;
 						}
+
+						if let Some(address) = ethereum {
+							domain_info.ethereum = Some(MultiAddress::Address20(address));
+						} else {
+							domain_info.ethereum = None;
+						}
+
+						if let Some(address) = polkadot.clone() {
+							domain_info.polkadot = Some(MultiAddress::Id(address));
+						} else {
+							domain_info.polkadot = None;
+						}
+
+						if let Some(address) = kusama.clone() {
+							domain_info.kusama = Some(MultiAddress::Id(address));
+						} else {
+							domain_info.kusama = None;
+						}
+
 						Self::deposit_event(Event::BindAddress(
 							who,
 							domain.clone(),
-							chain_type,
-							address.clone(),
+							bitcoin,
+							ethereum,
+							polkadot,
+							kusama,
 						));
 
 						Ok(())
