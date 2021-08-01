@@ -142,10 +142,10 @@ pub mod pallet {
 		DomainRegistered(
 			T::AccountId,
 			Vec<u8>,
-			Option<[u8; 32]>,
-			Option<[u8; 20]>,
-			Option<T::AccountId>,
-			Option<T::AccountId>,
+			Option<MultiAddress<T::AccountId, AccountIndex>>,
+			Option<MultiAddress<T::AccountId, AccountIndex>>,
+			Option<MultiAddress<T::AccountId, AccountIndex>>,
+			Option<MultiAddress<T::AccountId, AccountIndex>>,
 			BalanceOf<T>,
 			(T::ClassId, T::TokenId),
 		), /* todo add tokenid and classid */
@@ -155,10 +155,10 @@ pub mod pallet {
 		BindAddress(
 			T::AccountId,
 			Vec<u8>,
-			Option<[u8; 32]>,
-			Option<[u8; 20]>,
-			Option<T::AccountId>,
-			Option<T::AccountId>,
+			Option<MultiAddress<T::AccountId, AccountIndex>>,
+			Option<MultiAddress<T::AccountId, AccountIndex>>,
+			Option<MultiAddress<T::AccountId, AccountIndex>>,
+			Option<MultiAddress<T::AccountId, AccountIndex>>,
 		),
 	}
 
@@ -275,7 +275,8 @@ pub mod pallet {
 	pub enum Error<T> {
 		InvalidDomainLength,
 		InvalidTarget,
-		DomainMustExist,
+		DomainMustNoRegister,
+		InvalidAddressContent,
 	}
 
 	#[pallet::hooks]
@@ -287,10 +288,10 @@ pub mod pallet {
 		pub fn register(
 			origin: OriginFor<T>,
 			domain: Vec<u8>,
-			bitcoin: Option<[u8; 32]>,
-			ethereum: Option<[u8; 20]>,
-			polkadot: Option<T::AccountId>,
-			kusama: Option<T::AccountId>,
+			bitcoin: Option<MultiAddress<T::AccountId, AccountIndex>>,
+			ethereum: Option<MultiAddress<T::AccountId, AccountIndex>>,
+			polkadot: Option<MultiAddress<T::AccountId, AccountIndex>>,
+			kusama: Option<MultiAddress<T::AccountId, AccountIndex>>,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin.clone())?;
 
@@ -299,7 +300,29 @@ pub mod pallet {
 				Error::<T>::InvalidDomainLength
 			);
 
-			ensure!(!DomainInfos::<T>::contains_key(&domain), Error::<T>::DomainMustExist);
+			ensure!(!DomainInfos::<T>::contains_key(&domain), Error::<T>::DomainMustNoRegister);
+
+			if let Some(address) = bitcoin.clone() {
+				ensure!(
+					matches!(address, MultiAddress::Address32(_)),
+					Error::<T>::InvalidAddressContent
+				);
+			}
+
+			if let Some(address) = ethereum.clone() {
+				ensure!(
+					matches!(address, MultiAddress::Address20(_)),
+					Error::<T>::InvalidAddressContent
+				);
+			}
+
+			if let Some(address) = polkadot.clone() {
+				ensure!(matches!(address, MultiAddress::Id(_)), Error::<T>::InvalidAddressContent);
+			}
+
+			if let Some(address) = kusama.clone() {
+				ensure!(matches!(address, MultiAddress::Id(_)), Error::<T>::InvalidAddressContent);
+			}
 
 			let token_id = orml_nft::Pallet::<T>::next_token_id(T::NftClassID::get());
 			let owner: T::AccountId = T::PalletId::get().into_sub_account(token_id);
@@ -338,14 +361,15 @@ pub mod pallet {
 
 			let deposit = T::DomainDeposit::get();
 			<T as pallet::Config>::Currency::reserve(&who, deposit)?;
+
 			<DomainInfos<T>>::insert(
 				&domain,
 				DomainInfo {
 					native: who.clone(),
-					bitcoin: Some(MultiAddress::Address32(bitcoin.unwrap_or_default())),
-					ethereum: Some(MultiAddress::Address20(ethereum.unwrap_or_default())),
-					polkadot: Some(MultiAddress::Id(polkadot.clone().unwrap_or_default())),
-					kusama: Some(MultiAddress::Id(kusama.clone().unwrap_or_default())),
+					bitcoin: bitcoin.clone(),
+					ethereum: ethereum.clone(),
+					polkadot: polkadot.clone(),
+					kusama: kusama.clone(),
 					deposit,
 					nft_token: (T::NftClassID::get(), token_id.into()),
 				},
@@ -438,36 +462,52 @@ pub mod pallet {
 		pub fn bind_address(
 			origin: OriginFor<T>,
 			domain: Vec<u8>,
-			bitcoin: Option<[u8; 32]>,
-			ethereum: Option<[u8; 20]>,
-			polkadot: Option<T::AccountId>,
-			kusama: Option<T::AccountId>,
+			bitcoin: Option<MultiAddress<T::AccountId, AccountIndex>>,
+			ethereum: Option<MultiAddress<T::AccountId, AccountIndex>>,
+			polkadot: Option<MultiAddress<T::AccountId, AccountIndex>>,
+			kusama: Option<MultiAddress<T::AccountId, AccountIndex>>,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
 
 			if Domains::<T>::contains_key(&who) {
 				if domain == <Domains<T>>::get(&who) {
 					DomainInfos::<T>::try_mutate(&domain, |domain_info| -> DispatchResult {
-						if let Some(address) = bitcoin {
-							domain_info.bitcoin = Some(MultiAddress::Address32(address));
+						if let Some(address) = bitcoin.clone() {
+							ensure!(
+								matches!(address, MultiAddress::Address32(_)),
+								Error::<T>::InvalidAddressContent
+							);
+							domain_info.bitcoin = bitcoin.clone();
 						} else {
 							domain_info.bitcoin = None;
 						}
 
-						if let Some(address) = ethereum {
-							domain_info.ethereum = Some(MultiAddress::Address20(address));
+						if let Some(address) = ethereum.clone() {
+							ensure!(
+								matches!(address, MultiAddress::Address20(_)),
+								Error::<T>::InvalidAddressContent
+							);
+							domain_info.ethereum = ethereum.clone();
 						} else {
 							domain_info.ethereum = None;
 						}
 
 						if let Some(address) = polkadot.clone() {
-							domain_info.polkadot = Some(MultiAddress::Id(address));
+							ensure!(
+								matches!(address, MultiAddress::Id(_)),
+								Error::<T>::InvalidAddressContent
+							);
+							domain_info.polkadot = polkadot.clone();
 						} else {
 							domain_info.polkadot = None;
 						}
 
 						if let Some(address) = kusama.clone() {
-							domain_info.kusama = Some(MultiAddress::Id(address));
+							ensure!(
+								matches!(address, MultiAddress::Id(_)),
+								Error::<T>::InvalidAddressContent
+							);
+							domain_info.kusama = kusama.clone();
 						} else {
 							domain_info.kusama = None;
 						}
