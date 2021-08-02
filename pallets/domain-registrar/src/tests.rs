@@ -15,9 +15,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use frame_support::{assert_noop, assert_ok};
-
 use crate::{mock::*, Error};
+use frame_support::{assert_noop, assert_ok};
+use sp_runtime::MultiAddress;
 
 #[test]
 fn test_register() {
@@ -27,42 +27,78 @@ fn test_register() {
 			DomainModule::register(
 				Origin::signed(1),
 				vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
-				Some(vec![2]),
-				Some(vec![3]),
-				Some(vec![4]),
-				Some(vec![5]),
+				Some(MultiAddress::Address32([
+					1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+					23, 24, 25, 26, 27, 28, 29, 30, 31, 32
+				])),
+				Some(MultiAddress::Address20([
+					1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+				])),
+				Some(MultiAddress::Id(0)),
+				Some(MultiAddress::Id(1)),
 			),
 			Error::<Runtime>::InvalidDomainLength
+		);
+
+		assert_noop!(
+			DomainModule::register(
+				Origin::signed(1),
+				vec![1],
+				Some(MultiAddress::Address20([
+					1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+				])),
+				Some(MultiAddress::Address20([
+					1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+				])),
+				Some(MultiAddress::Id(0)),
+				Some(MultiAddress::Id(1)),
+			),
+			Error::<Runtime>::InvalidAddressContent
 		);
 
 		assert_ok!(DomainModule::register(
 			Origin::signed(1),
 			vec![1],
-			Some(vec![2]),
-			Some(vec![3]),
-			Some(vec![4]),
-			Some(vec![5]),
+			Some(MultiAddress::Address32([
+				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+				24, 25, 26, 27, 28, 29, 30, 31, 32
+			])),
+			Some(MultiAddress::Address20([
+				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+			])),
+			Some(MultiAddress::Id(0)),
+			Some(MultiAddress::Id(1)),
 		));
 
 		assert_noop!(
 			DomainModule::register(
 				Origin::signed(1),
 				vec![1],
-				Some(vec![2]),
-				Some(vec![3]),
-				Some(vec![4]),
-				Some(vec![5])
+				Some(MultiAddress::Address32([
+					1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+					23, 24, 25, 26, 27, 28, 29, 30, 31, 32
+				])),
+				Some(MultiAddress::Address20([
+					1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+				])),
+				Some(MultiAddress::Id(0)),
+				Some(MultiAddress::Id(1)),
 			),
-			Error::<Runtime>::DomainMustExist
+			Error::<Runtime>::DomainMustNoRegister
 		);
 
 		let event = Event::DomainModule(crate::Event::DomainRegistered(
 			1,
 			vec![1],
-			Some(vec![2]),
-			Some(vec![3]),
-			Some(vec![4]),
-			Some(vec![5]),
+			Some(MultiAddress::Address32([
+				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+				24, 25, 26, 27, 28, 29, 30, 31, 32,
+			])),
+			Some(MultiAddress::Address20([
+				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+			])),
+			Some(MultiAddress::Id(0)),
+			Some(MultiAddress::Id(1)),
 			1,
 			crate::DomainInfos::<Runtime>::get(vec![1]).nft_token,
 		));
@@ -73,10 +109,15 @@ fn test_register() {
 			crate::DomainInfos::<Runtime>::get(vec![1]),
 			crate::DomainInfo {
 				native: 1,
-				bitcoin: Some(vec![2]),
-				ethereum: Some(vec![3]),
-				polkadot: Some(0), //todo only vec<u8> 32 can convert to AccountId
-				kusama: Some(0),   //todo only vec<u8> 32 can convert to AccountId
+				bitcoin: Some(MultiAddress::Address32([
+					1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+					23, 24, 25, 26, 27, 28, 29, 30, 31, 32
+				])),
+				ethereum: Some(MultiAddress::Address20([
+					1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+				])),
+				polkadot: Some(MultiAddress::Id(0)), //todo only vec<u8> 32 can convert to AccountId
+				kusama: Some(MultiAddress::Id(1)),   //todo only vec<u8> 32 can convert to AccountId
 				deposit: 1,
 				nft_token: (0, 1)
 			}
@@ -90,19 +131,29 @@ fn deregister() {
 		assert_ok!(DomainModule::register(
 			Origin::signed(1),
 			vec![1],
-			Some(vec![2]),
-			Some(vec![3]),
-			Some(vec![4]),
-			Some(vec![5])
+			Some(MultiAddress::Address32([
+				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+				24, 25, 26, 27, 28, 29, 30, 31, 32
+			])),
+			Some(MultiAddress::Address20([
+				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+			])),
+			Some(MultiAddress::Id(0)),
+			Some(MultiAddress::Id(1)),
 		));
 
 		let event = Event::DomainModule(crate::Event::DomainRegistered(
 			1,
 			vec![1],
-			Some(vec![2]),
-			Some(vec![3]),
-			Some(vec![4]),
-			Some(vec![5]),
+			Some(MultiAddress::Address32([
+				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+				24, 25, 26, 27, 28, 29, 30, 31, 32,
+			])),
+			Some(MultiAddress::Address20([
+				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+			])),
+			Some(MultiAddress::Id(0)),
+			Some(MultiAddress::Id(1)),
 			1,
 			crate::DomainInfos::<Runtime>::get(vec![1]).nft_token,
 		));
@@ -127,19 +178,29 @@ fn send() {
 		assert_ok!(DomainModule::register(
 			Origin::signed(1),
 			vec![1],
-			Some(vec![2]),
-			Some(vec![3]),
-			Some(vec![4]),
-			Some(vec![5])
+			Some(MultiAddress::Address32([
+				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+				24, 25, 26, 27, 28, 29, 30, 31, 32
+			])),
+			Some(MultiAddress::Address20([
+				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+			])),
+			Some(MultiAddress::Id(0)),
+			Some(MultiAddress::Id(1)),
 		));
 
 		let event = Event::DomainModule(crate::Event::DomainRegistered(
 			1,
 			vec![1],
-			Some(vec![2]),
-			Some(vec![3]),
-			Some(vec![4]),
-			Some(vec![5]),
+			Some(MultiAddress::Address32([
+				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+				24, 25, 26, 27, 28, 29, 30, 31, 32,
+			])),
+			Some(MultiAddress::Address20([
+				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+			])),
+			Some(MultiAddress::Id(0)),
+			Some(MultiAddress::Id(1)),
 			1,
 			crate::DomainInfos::<Runtime>::get(vec![1]).nft_token,
 		));
@@ -159,19 +220,29 @@ fn transfer() {
 		assert_ok!(DomainModule::register(
 			Origin::signed(1),
 			vec![1],
-			Some(vec![2]),
-			Some(vec![3]),
-			Some(vec![4]),
-			Some(vec![5])
+			Some(MultiAddress::Address32([
+				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+				24, 25, 26, 27, 28, 29, 30, 31, 32
+			])),
+			Some(MultiAddress::Address20([
+				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+			])),
+			Some(MultiAddress::Id(0)),
+			Some(MultiAddress::Id(1)),
 		));
 
 		let event = Event::DomainModule(crate::Event::DomainRegistered(
 			1,
 			vec![1],
-			Some(vec![2]),
-			Some(vec![3]),
-			Some(vec![4]),
-			Some(vec![5]),
+			Some(MultiAddress::Address32([
+				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+				24, 25, 26, 27, 28, 29, 30, 31, 32,
+			])),
+			Some(MultiAddress::Address20([
+				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+			])),
+			Some(MultiAddress::Id(0)),
+			Some(MultiAddress::Id(1)),
 			1,
 			crate::DomainInfos::<Runtime>::get(vec![1]).nft_token,
 		));
@@ -195,54 +266,108 @@ fn bind_address() {
 		assert_ok!(DomainModule::register(
 			Origin::signed(1),
 			vec![1],
-			Some(vec![1]),
-			Some(vec![1]),
-			Some(vec![1]),
-			Some(vec![1])
+			Some(MultiAddress::Address32([
+				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+				24, 25, 26, 27, 28, 29, 30, 31, 32
+			])),
+			Some(MultiAddress::Address20([
+				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+			])),
+			Some(MultiAddress::Id(0)),
+			Some(MultiAddress::Id(1)),
 		));
 
 		let event = Event::DomainModule(crate::Event::DomainRegistered(
 			1,
 			vec![1],
-			Some(vec![1]),
-			Some(vec![1]),
-			Some(vec![1]),
-			Some(vec![1]),
+			Some(MultiAddress::Address32([
+				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+				24, 25, 26, 27, 28, 29, 30, 31, 32,
+			])),
+			Some(MultiAddress::Address20([
+				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+			])),
+			Some(MultiAddress::Id(0)),
+			Some(MultiAddress::Id(1)),
 			1,
 			crate::DomainInfos::<Runtime>::get(vec![1]).nft_token,
 		));
 		assert_eq!(last_event(), event);
-		assert_eq!(crate::DomainInfos::<Runtime>::get(vec![1]).ethereum, Some(vec![1]));
+		assert_eq!(
+			crate::DomainInfos::<Runtime>::get(vec![1]).ethereum,
+			Some(MultiAddress::Address20([
+				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+			]))
+		);
 
 		assert_ok!(DomainModule::bind_address(
 			Origin::signed(1),
 			vec![1],
-			crate::AddressChainType::ETH,
-			vec![3]
+			Some(MultiAddress::Address32([
+				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+				24, 25, 26, 27, 28, 29, 30, 31, 32
+			])),
+			Some(MultiAddress::Address20([
+				2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+			])),
+			Some(MultiAddress::Id(0)),
+			Some(MultiAddress::Id(1)),
 		));
 
 		let event = Event::DomainModule(crate::Event::BindAddress(
 			1,
 			vec![1],
-			crate::AddressChainType::ETH,
-			vec![3],
+			Some(MultiAddress::Address32([
+				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+				24, 25, 26, 27, 28, 29, 30, 31, 32,
+			])),
+			Some(MultiAddress::Address20([
+				2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+			])),
+			Some(MultiAddress::Id(0)),
+			Some(MultiAddress::Id(1)),
 		));
 		assert_eq!(last_event(), event);
-		assert_eq!(crate::DomainInfos::<Runtime>::get(vec![1]).ethereum, Some(vec![3]));
+		assert_eq!(
+			crate::DomainInfos::<Runtime>::get(vec![1]).ethereum,
+			Some(MultiAddress::Address20([
+				2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+			]))
+		);
 
 		assert_ok!(DomainModule::bind_address(
 			Origin::signed(1),
 			vec![1],
-			crate::AddressChainType::BTC,
-			vec![4]
+			Some(MultiAddress::Address32([
+				2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+				24, 25, 26, 27, 28, 29, 30, 31, 32
+			])),
+			Some(MultiAddress::Address20([
+				2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+			])),
+			Some(MultiAddress::Id(2)),
+			Some(MultiAddress::Id(2)),
 		));
 		let event = Event::DomainModule(crate::Event::BindAddress(
 			1,
 			vec![1],
-			crate::AddressChainType::BTC,
-			vec![4],
+			Some(MultiAddress::Address32([
+				2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+				24, 25, 26, 27, 28, 29, 30, 31, 32,
+			])),
+			Some(MultiAddress::Address20([
+				2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+			])),
+			Some(MultiAddress::Id(2)),
+			Some(MultiAddress::Id(2)),
 		));
 		assert_eq!(last_event(), event);
-		assert_eq!(crate::DomainInfos::<Runtime>::get(vec![1]).bitcoin, Some(vec![4]));
+		assert_eq!(
+			crate::DomainInfos::<Runtime>::get(vec![1]).bitcoin,
+			Some(MultiAddress::Address32([
+				2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+				24, 25, 26, 27, 28, 29, 30, 31, 32
+			]))
+		);
 	});
 }
