@@ -304,7 +304,7 @@ pub mod pallet {
 
 			if let Some(address) = bitcoin.clone() {
 				ensure!(
-					matches!(address, MultiAddress::Address32(_)),
+					matches!(address, MultiAddress::Raw(_)),
 					Error::<T>::InvalidAddressContent
 				);
 			}
@@ -474,7 +474,7 @@ pub mod pallet {
 					DomainInfos::<T>::try_mutate(&domain, |domain_info| -> DispatchResult {
 						if let Some(address) = bitcoin.clone() {
 							ensure!(
-								matches!(address, MultiAddress::Address32(_)),
+								matches!(address, MultiAddress::Raw(_)),
 								Error::<T>::InvalidAddressContent
 							);
 							domain_info.bitcoin = bitcoin.clone();

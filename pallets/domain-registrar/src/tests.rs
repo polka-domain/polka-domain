@@ -27,7 +27,7 @@ fn test_register() {
 			DomainModule::register(
 				Origin::signed(1),
 				vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
-				Some(MultiAddress::Address32([
+				Some(MultiAddress::Raw(vec![
 					1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
 					23, 24, 25, 26, 27, 28, 29, 30, 31, 32
 				])),
@@ -59,7 +59,7 @@ fn test_register() {
 		assert_ok!(DomainModule::register(
 			Origin::signed(1),
 			vec![1],
-			Some(MultiAddress::Address32([
+			Some(MultiAddress::Raw(vec![
 				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
 				24, 25, 26, 27, 28, 29, 30, 31, 32
 			])),
@@ -74,7 +74,7 @@ fn test_register() {
 			DomainModule::register(
 				Origin::signed(1),
 				vec![1],
-				Some(MultiAddress::Address32([
+				Some(MultiAddress::Raw(vec![
 					1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
 					23, 24, 25, 26, 27, 28, 29, 30, 31, 32
 				])),
@@ -90,7 +90,7 @@ fn test_register() {
 		let event = Event::DomainModule(crate::Event::DomainRegistered(
 			1,
 			vec![1],
-			Some(MultiAddress::Address32([
+			Some(MultiAddress::Raw(vec![
 				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
 				24, 25, 26, 27, 28, 29, 30, 31, 32,
 			])),
@@ -109,7 +109,7 @@ fn test_register() {
 			crate::DomainInfos::<Runtime>::get(vec![1]),
 			crate::DomainInfo {
 				native: 1,
-				bitcoin: Some(MultiAddress::Address32([
+				bitcoin: Some(MultiAddress::Raw(vec![
 					1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
 					23, 24, 25, 26, 27, 28, 29, 30, 31, 32
 				])),
@@ -131,7 +131,7 @@ fn deregister() {
 		assert_ok!(DomainModule::register(
 			Origin::signed(1),
 			vec![1],
-			Some(MultiAddress::Address32([
+			Some(MultiAddress::Raw(vec![
 				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
 				24, 25, 26, 27, 28, 29, 30, 31, 32
 			])),
@@ -145,7 +145,7 @@ fn deregister() {
 		let event = Event::DomainModule(crate::Event::DomainRegistered(
 			1,
 			vec![1],
-			Some(MultiAddress::Address32([
+			Some(MultiAddress::Raw(vec![
 				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
 				24, 25, 26, 27, 28, 29, 30, 31, 32,
 			])),
@@ -178,7 +178,7 @@ fn send() {
 		assert_ok!(DomainModule::register(
 			Origin::signed(1),
 			vec![1],
-			Some(MultiAddress::Address32([
+			Some(MultiAddress::Raw(vec![
 				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
 				24, 25, 26, 27, 28, 29, 30, 31, 32
 			])),
@@ -192,7 +192,7 @@ fn send() {
 		let event = Event::DomainModule(crate::Event::DomainRegistered(
 			1,
 			vec![1],
-			Some(MultiAddress::Address32([
+			Some(MultiAddress::Raw(vec![
 				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
 				24, 25, 26, 27, 28, 29, 30, 31, 32,
 			])),
@@ -220,7 +220,7 @@ fn transfer() {
 		assert_ok!(DomainModule::register(
 			Origin::signed(1),
 			vec![1],
-			Some(MultiAddress::Address32([
+			Some(MultiAddress::Raw(vec![
 				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
 				24, 25, 26, 27, 28, 29, 30, 31, 32
 			])),
@@ -234,7 +234,7 @@ fn transfer() {
 		let event = Event::DomainModule(crate::Event::DomainRegistered(
 			1,
 			vec![1],
-			Some(MultiAddress::Address32([
+			Some(MultiAddress::Raw(vec![
 				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
 				24, 25, 26, 27, 28, 29, 30, 31, 32,
 			])),
@@ -266,7 +266,7 @@ fn bind_address() {
 		assert_ok!(DomainModule::register(
 			Origin::signed(1),
 			vec![1],
-			Some(MultiAddress::Address32([
+			Some(MultiAddress::Raw(vec![
 				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
 				24, 25, 26, 27, 28, 29, 30, 31, 32
 			])),
@@ -280,7 +280,7 @@ fn bind_address() {
 		let event = Event::DomainModule(crate::Event::DomainRegistered(
 			1,
 			vec![1],
-			Some(MultiAddress::Address32([
+			Some(MultiAddress::Raw(vec![
 				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
 				24, 25, 26, 27, 28, 29, 30, 31, 32,
 			])),
@@ -303,7 +303,7 @@ fn bind_address() {
 		assert_ok!(DomainModule::bind_address(
 			Origin::signed(1),
 			vec![1],
-			Some(MultiAddress::Address32([
+			Some(MultiAddress::Raw(vec![
 				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
 				24, 25, 26, 27, 28, 29, 30, 31, 32
 			])),
@@ -317,7 +317,7 @@ fn bind_address() {
 		let event = Event::DomainModule(crate::Event::BindAddress(
 			1,
 			vec![1],
-			Some(MultiAddress::Address32([
+			Some(MultiAddress::Raw(vec![
 				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
 				24, 25, 26, 27, 28, 29, 30, 31, 32,
 			])),
@@ -338,7 +338,7 @@ fn bind_address() {
 		assert_ok!(DomainModule::bind_address(
 			Origin::signed(1),
 			vec![1],
-			Some(MultiAddress::Address32([
+			Some(MultiAddress::Raw(vec![
 				2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
 				24, 25, 26, 27, 28, 29, 30, 31, 32
 			])),
@@ -351,7 +351,7 @@ fn bind_address() {
 		let event = Event::DomainModule(crate::Event::BindAddress(
 			1,
 			vec![1],
-			Some(MultiAddress::Address32([
+			Some(MultiAddress::Raw(vec![
 				2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
 				24, 25, 26, 27, 28, 29, 30, 31, 32,
 			])),
@@ -364,7 +364,7 @@ fn bind_address() {
 		assert_eq!(last_event(), event);
 		assert_eq!(
 			crate::DomainInfos::<Runtime>::get(vec![1]).bitcoin,
-			Some(MultiAddress::Address32([
+			Some(MultiAddress::Raw(vec![
 				2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
 				24, 25, 26, 27, 28, 29, 30, 31, 32
 			]))
