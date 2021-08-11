@@ -118,8 +118,8 @@ const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
 /// We allow `Normal` extrinsics to fill up the block up to 75%, the rest can be used
 /// by  Operational  extrinsics.
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
-/// We allow for 2 seconds of compute with a 6 second average block time.
-const MAXIMUM_BLOCK_WEIGHT: Weight = 2 * WEIGHT_PER_SECOND;
+/// We allow for .5 seconds of compute with a 12 second average block time.
+const MAXIMUM_BLOCK_WEIGHT: Weight = WEIGHT_PER_SECOND / 2;
 
 parameter_types! {
 	pub const BlockHashCount: BlockNumber = 250;
@@ -493,6 +493,7 @@ impl orml_tokens::Config for Runtime {
 	type MaxLocks = MaxLocks;
 	type OnDust = ();
 	type WeightInfo = ();
+	type DustRemovalWhitelist = ();
 }
 
 pub const NATIVE_CURRENCY_ID: CurrencyId = CurrencyId::Token(TokenSymbol::NAME);
@@ -565,11 +566,11 @@ construct_runtime! {
 		System: frame_system::{Pallet, Call, Storage, Config, Event<T>},
 		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
 		Sudo: pallet_sudo::{Pallet, Call, Storage, Config<T>, Event<T>},
-		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Call, Storage},
+		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Storage},
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage},
 
 		// Parachain
-		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Config, Storage, Inherent, Event<T>, ValidateUnsigned},
+		ParachainSystem: cumulus_pallet_parachain_system::{Pallet, Call, Config, Storage, Inherent, Event<T>},
 		ParachainInfo: parachain_info::{Pallet, Storage, Config},
 
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
@@ -691,8 +692,9 @@ impl_runtime_apis! {
 		fn validate_transaction(
 			source: TransactionSource,
 			tx: <Block as BlockT>::Extrinsic,
+			block_hash: <Block as BlockT>::Hash,
 		) -> TransactionValidity {
-			Executive::validate_transaction(source, tx)
+			Executive::validate_transaction(source, tx, block_hash)
 		}
 	}
 
