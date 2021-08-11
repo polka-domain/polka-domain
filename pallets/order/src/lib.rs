@@ -22,7 +22,7 @@ use frame_support::RuntimeDebug;
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
 pub use pallet::*;
 use primitives::{CurrencyId, NFT};
-use sp_runtime::traits::{AtLeast32BitUnsigned, Saturating};
+use sp_runtime::traits::{AtLeast32BitUnsigned, One, Saturating};
 use sp_std::prelude::*;
 
 #[cfg(test)]
@@ -147,7 +147,7 @@ pub mod pallet {
 				order_id,
 				PoolDetails { maker: maker.clone(), taker: None, token0, token1, total1 },
 			);
-			NextOrderId::<T>::put(order_id.saturating_add(1u32.into()));
+			NextOrderId::<T>::put(order_id.saturating_add(One::one()));
 
 			Self::deposit_event(Event::OrderCreated(order_id, maker, token0, token1, total1));
 

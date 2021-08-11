@@ -22,7 +22,7 @@ use frame_support::{transactional, RuntimeDebug};
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
 pub use pallet::*;
 use primitives::{CurrencyId, NFT};
-use sp_runtime::traits::{AtLeast32BitUnsigned, Saturating, Zero};
+use sp_runtime::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 use sp_std::prelude::*;
 
 #[cfg(test)]
@@ -185,8 +185,7 @@ pub mod pallet {
 
 			let creator = ensure_signed(origin)?;
 			let auction_id = NextAuctionId::<T>::get().unwrap_or_default();
-			let start_at = frame_system::Pallet::<T>::block_number()
-				.saturating_add(T::BlockNumber::from(1u32));
+			let start_at = frame_system::Pallet::<T>::block_number().saturating_add(One::one());
 			let end_at = start_at.saturating_add(duration);
 			ensure!(
 				AuctionEndAt::<T>::iter_prefix(end_at).count() <= T::MaxAuction::get() as usize,
@@ -208,7 +207,7 @@ pub mod pallet {
 				},
 			);
 			AuctionEndAt::<T>::insert(end_at, auction_id, Some(()));
-			NextAuctionId::<T>::put(auction_id.saturating_add(1u32.into()));
+			NextAuctionId::<T>::put(auction_id.saturating_add(One::one()));
 
 			Self::deposit_event(Event::AuctionCreated(
 				auction_id, creator, token0, token1, min1, duration, start_at, end_at,
