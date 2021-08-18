@@ -5,6 +5,7 @@
           "DEXShare": "(TokenSymbol, TokenSymbol)"
       }
   },
+  "Currency": "CurrencyIdOf",
   "CurrencyIdOf": "CurrencyId",
   "Amount": "i128",
   "AmountOf": "Amount",
