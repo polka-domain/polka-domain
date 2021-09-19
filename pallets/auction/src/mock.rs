@@ -17,10 +17,10 @@
 
 #![cfg(test)]
 
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{Filter, InstanceFilter},
+	traits::{Contains, InstanceFilter},
 	PalletId, RuntimeDebug,
 };
 use orml_traits::parameter_type_with_key;
@@ -77,6 +77,8 @@ impl pallet_balances::Config for Runtime {
 	type ExistentialDeposit = ExistentialDeposit;
 	type MaxLocks = ();
 	type WeightInfo = ();
+	type MaxReserves = ();
+	type ReserveIdentifier = [u8; 8];
 }
 
 impl pallet_utility::Config for Runtime {
@@ -93,7 +95,9 @@ parameter_types! {
 	pub const AnnouncementDepositBase: u64 = 1;
 	pub const AnnouncementDepositFactor: u64 = 1;
 }
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, RuntimeDebug)]
+#[derive(
+	Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, RuntimeDebug, MaxEncodedLen,
+)]
 pub enum ProxyType {
 	Any,
 	JustTransfer,
@@ -120,8 +124,8 @@ impl InstanceFilter<Call> for ProxyType {
 	}
 }
 pub struct BaseFilter;
-impl Filter<Call> for BaseFilter {
-	fn filter(c: &Call) -> bool {
+impl Contains<Call> for BaseFilter {
+	fn contains(c: &Call) -> bool {
 		match *c {
 			// Remark is used as a no-op call in the benchmarking
 			Call::System(SystemCall::remark(_)) => true,
@@ -163,6 +167,8 @@ impl orml_tokens::Config for Runtime {
 	type MaxLocks = ();
 	type OnDust = ();
 	type WeightInfo = ();
+	type SweepOrigin = frame_system::EnsureRoot<AccountId>;
+	type DustRemovalWhitelist = ();
 }
 
 pub const NATIVE_CURRENCY_ID: CurrencyId = CurrencyId::Token(TokenSymbol::NAME);

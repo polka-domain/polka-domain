@@ -53,7 +53,7 @@ fn test_create_auction_should_work() {
 			Properties(ClassProperty::Transferable | ClassProperty::Burnable)
 		));
 
-		let event = Event::nft(nft::Event::CreatedClass(class_id_account(), CLASS_ID));
+		let event = Event::NFTPallet(nft::Event::CreatedClass(class_id_account(), CLASS_ID));
 		assert_eq!(last_event(), event);
 
 		assert_ok!(NFTPallet::mint(
@@ -63,7 +63,8 @@ fn test_create_auction_should_work() {
 			vec![2],
 			2
 		));
-		let event = Event::nft(nft::Event::MintedToken(class_id_account(), ALICE, CLASS_ID, 2));
+		let event =
+			Event::NFTPallet(nft::Event::MintedToken(class_id_account(), ALICE, CLASS_ID, 2));
 		assert_eq!(last_event(), event);
 
 		assert_noop!(
@@ -84,7 +85,7 @@ fn test_create_auction_should_work() {
 			1,
 			10
 		));
-		let event = Event::pallet_auction(crate::Event::AuctionCreated(
+		let event = Event::AuctionModule(crate::Event::AuctionCreated(
 			0,
 			ALICE,
 			(CLASS_ID, TOKEN_ID),
@@ -107,7 +108,7 @@ fn test_create_auction_should_fail() {
 			Properties(ClassProperty::Transferable | ClassProperty::Burnable)
 		));
 
-		let event = Event::nft(nft::Event::CreatedClass(class_id_account(), CLASS_ID));
+		let event = Event::NFTPallet(nft::Event::CreatedClass(class_id_account(), CLASS_ID));
 		assert_eq!(last_event(), event);
 
 		assert_ok!(NFTPallet::mint(
@@ -117,7 +118,8 @@ fn test_create_auction_should_fail() {
 			vec![2],
 			5
 		));
-		let event = Event::nft(nft::Event::MintedToken(class_id_account(), ALICE, CLASS_ID, 5));
+		let event =
+			Event::NFTPallet(nft::Event::MintedToken(class_id_account(), ALICE, CLASS_ID, 5));
 		assert_eq!(last_event(), event);
 
 		assert_ok!(AuctionModule::create_auction(
@@ -127,7 +129,7 @@ fn test_create_auction_should_fail() {
 			1,
 			10
 		));
-		let event = Event::pallet_auction(crate::Event::AuctionCreated(
+		let event = Event::AuctionModule(crate::Event::AuctionCreated(
 			0,
 			ALICE,
 			(CLASS_ID, 0),
@@ -146,7 +148,7 @@ fn test_create_auction_should_fail() {
 			1,
 			10
 		));
-		let event = Event::pallet_auction(crate::Event::AuctionCreated(
+		let event = Event::AuctionModule(crate::Event::AuctionCreated(
 			1,
 			ALICE,
 			(CLASS_ID, 1),
@@ -165,7 +167,7 @@ fn test_create_auction_should_fail() {
 			1,
 			10
 		));
-		let event = Event::pallet_auction(crate::Event::AuctionCreated(
+		let event = Event::AuctionModule(crate::Event::AuctionCreated(
 			2,
 			ALICE,
 			(CLASS_ID, 2),
@@ -184,7 +186,7 @@ fn test_create_auction_should_fail() {
 			1,
 			10
 		));
-		let event = Event::pallet_auction(crate::Event::AuctionCreated(
+		let event = Event::AuctionModule(crate::Event::AuctionCreated(
 			3,
 			ALICE,
 			(CLASS_ID, 3),
@@ -218,7 +220,7 @@ fn test_bid_auction_should_work() {
 			Properties(ClassProperty::Transferable | ClassProperty::Burnable)
 		));
 
-		let event = Event::nft(nft::Event::CreatedClass(class_id_account(), CLASS_ID));
+		let event = Event::NFTPallet(nft::Event::CreatedClass(class_id_account(), CLASS_ID));
 		assert_eq!(last_event(), event);
 
 		assert_ok!(NFTPallet::mint(
@@ -228,7 +230,8 @@ fn test_bid_auction_should_work() {
 			vec![2],
 			2
 		));
-		let event = Event::nft(nft::Event::MintedToken(class_id_account(), ALICE, CLASS_ID, 2));
+		let event =
+			Event::NFTPallet(nft::Event::MintedToken(class_id_account(), ALICE, CLASS_ID, 2));
 		assert_eq!(last_event(), event);
 
 		assert_ok!(AuctionModule::create_auction(
@@ -238,7 +241,7 @@ fn test_bid_auction_should_work() {
 			2,
 			DURATION
 		));
-		let event = Event::pallet_auction(crate::Event::AuctionCreated(
+		let event = Event::AuctionModule(crate::Event::AuctionCreated(
 			0,
 			ALICE,
 			(CLASS_ID, TOKEN_ID),
@@ -251,7 +254,7 @@ fn test_bid_auction_should_work() {
 		assert_eq!(last_event(), event);
 
 		assert_ok!(AuctionModule::bid_auction(Origin::signed(BOB), 0, 2));
-		let event = Event::pallet_auction(crate::Event::AuctionBid(0, BOB, 2));
+		let event = Event::AuctionModule(crate::Event::AuctionBid(0, BOB, 2));
 		assert_eq!(last_event(), event);
 
 		let before_alice_balance = free_balance(&ALICE);
@@ -260,7 +263,7 @@ fn test_bid_auction_should_work() {
 
 		assert_eq!(free_balance(&ALICE), before_alice_balance + 2);
 
-		let event = Event::pallet_auction(crate::Event::AuctionEnd(0, Some(BOB), Some(2)));
+		let event = Event::AuctionModule(crate::Event::AuctionEnd(0, Some(BOB), Some(2)));
 		assert_eq!(last_event(), event);
 	});
 }
@@ -274,7 +277,7 @@ fn test_bid_auction_should_fail() {
 			Properties(ClassProperty::Transferable | ClassProperty::Burnable)
 		));
 
-		let event = Event::nft(nft::Event::CreatedClass(class_id_account(), CLASS_ID));
+		let event = Event::NFTPallet(nft::Event::CreatedClass(class_id_account(), CLASS_ID));
 		assert_eq!(last_event(), event);
 
 		assert_ok!(NFTPallet::mint(
@@ -284,7 +287,8 @@ fn test_bid_auction_should_fail() {
 			vec![2],
 			2
 		));
-		let event = Event::nft(nft::Event::MintedToken(class_id_account(), ALICE, CLASS_ID, 2));
+		let event =
+			Event::NFTPallet(nft::Event::MintedToken(class_id_account(), ALICE, CLASS_ID, 2));
 		assert_eq!(last_event(), event);
 
 		assert_ok!(AuctionModule::create_auction(
@@ -294,7 +298,7 @@ fn test_bid_auction_should_fail() {
 			2,
 			DURATION
 		));
-		let event = Event::pallet_auction(crate::Event::AuctionCreated(
+		let event = Event::AuctionModule(crate::Event::AuctionCreated(
 			0,
 			ALICE,
 			(CLASS_ID, TOKEN_ID),
@@ -337,7 +341,7 @@ fn test_cancel_auction_should_work() {
 			Properties(ClassProperty::Transferable | ClassProperty::Burnable)
 		));
 
-		let event = Event::nft(nft::Event::CreatedClass(class_id_account(), CLASS_ID));
+		let event = Event::NFTPallet(nft::Event::CreatedClass(class_id_account(), CLASS_ID));
 		assert_eq!(last_event(), event);
 
 		assert_ok!(NFTPallet::mint(
@@ -347,7 +351,8 @@ fn test_cancel_auction_should_work() {
 			vec![2],
 			2
 		));
-		let event = Event::nft(nft::Event::MintedToken(class_id_account(), ALICE, CLASS_ID, 2));
+		let event =
+			Event::NFTPallet(nft::Event::MintedToken(class_id_account(), ALICE, CLASS_ID, 2));
 		assert_eq!(last_event(), event);
 
 		assert_ok!(AuctionModule::create_auction(
@@ -357,7 +362,7 @@ fn test_cancel_auction_should_work() {
 			1,
 			10
 		));
-		let event = Event::pallet_auction(crate::Event::AuctionCreated(
+		let event = Event::AuctionModule(crate::Event::AuctionCreated(
 			0,
 			ALICE,
 			(CLASS_ID, TOKEN_ID),
@@ -370,7 +375,7 @@ fn test_cancel_auction_should_work() {
 		assert_eq!(last_event(), event);
 
 		assert_ok!(AuctionModule::cancel_auction(Origin::signed(ALICE), 0));
-		let event = Event::pallet_auction(crate::Event::AuctionCancelled(0));
+		let event = Event::AuctionModule(crate::Event::AuctionCancelled(0));
 		assert_eq!(last_event(), event);
 	});
 }
@@ -384,7 +389,7 @@ fn test_cancel_auction_should_fail() {
 			Properties(ClassProperty::Transferable | ClassProperty::Burnable)
 		));
 
-		let event = Event::nft(nft::Event::CreatedClass(class_id_account(), CLASS_ID));
+		let event = Event::NFTPallet(nft::Event::CreatedClass(class_id_account(), CLASS_ID));
 		assert_eq!(last_event(), event);
 
 		assert_ok!(NFTPallet::mint(
@@ -394,7 +399,8 @@ fn test_cancel_auction_should_fail() {
 			vec![2],
 			2
 		));
-		let event = Event::nft(nft::Event::MintedToken(class_id_account(), ALICE, CLASS_ID, 2));
+		let event =
+			Event::NFTPallet(nft::Event::MintedToken(class_id_account(), ALICE, CLASS_ID, 2));
 		assert_eq!(last_event(), event);
 
 		assert_ok!(AuctionModule::create_auction(
@@ -404,7 +410,7 @@ fn test_cancel_auction_should_fail() {
 			2,
 			DURATION
 		));
-		let event = Event::pallet_auction(crate::Event::AuctionCreated(
+		let event = Event::AuctionModule(crate::Event::AuctionCreated(
 			0,
 			ALICE,
 			(CLASS_ID, TOKEN_ID),

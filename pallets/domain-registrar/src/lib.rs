@@ -303,10 +303,7 @@ pub mod pallet {
 			ensure!(!DomainInfos::<T>::contains_key(&domain), Error::<T>::DomainMustNoRegister);
 
 			if let Some(address) = bitcoin.clone() {
-				ensure!(
-					matches!(address, MultiAddress::Raw(_)),
-					Error::<T>::InvalidAddressContent
-				);
+				ensure!(matches!(address, MultiAddress::Raw(_)), Error::<T>::InvalidAddressContent);
 			}
 
 			if let Some(address) = ethereum.clone() {

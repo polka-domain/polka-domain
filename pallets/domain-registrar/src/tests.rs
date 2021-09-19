@@ -173,48 +173,6 @@ fn deregister() {
 }
 
 #[test]
-fn send() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(DomainModule::register(
-			Origin::signed(1),
-			vec![1],
-			Some(MultiAddress::Raw(vec![
-				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
-				24, 25, 26, 27, 28, 29, 30, 31, 32
-			])),
-			Some(MultiAddress::Address20([
-				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
-			])),
-			Some(MultiAddress::Id(0)),
-			Some(MultiAddress::Id(1)),
-		));
-
-		let event = Event::DomainModule(crate::Event::DomainRegistered(
-			1,
-			vec![1],
-			Some(MultiAddress::Raw(vec![
-				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
-				24, 25, 26, 27, 28, 29, 30, 31, 32,
-			])),
-			Some(MultiAddress::Address20([
-				1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-			])),
-			Some(MultiAddress::Id(0)),
-			Some(MultiAddress::Id(1)),
-			1,
-			crate::DomainInfos::<Runtime>::get(vec![1]).nft_token,
-		));
-		assert_eq!(last_event(), event);
-
-		let call = Box::new(Call::Balances(BalancesCall::transfer(1, 100)));
-		assert_ok!(DomainModule::send(Origin::signed(2), 1, vec![1], call));
-
-		let event = Event::DomainModule(crate::Event::Sent(2, vec![1]));
-		assert_eq!(last_event(), event);
-	});
-}
-
-#[test]
 fn transfer() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(DomainModule::register(
