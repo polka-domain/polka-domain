@@ -16,9 +16,10 @@
 // limitations under the License.
 #![cfg(test)]
 
+use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
 	parameter_types,
-	traits::{Filter, InstanceFilter, MaxEncodedLen},
+	traits::{Contains, InstanceFilter},
 	PalletId,
 };
 use frame_system as system;
@@ -145,8 +146,8 @@ impl InstanceFilter<Call> for ProxyType {
 	}
 }
 pub struct BaseFilter;
-impl Filter<Call> for BaseFilter {
-	fn filter(c: &Call) -> bool {
+impl Contains<Call> for BaseFilter {
+	fn contains(c: &Call) -> bool {
 		match *c {
 			// Remark is used as a no-op call in the benchmarking
 			Call::System(SystemCall::remark(_)) => true,

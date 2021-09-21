@@ -352,7 +352,7 @@ pub mod module {
 			T::Currency::reserve(&to, total_deposit)?;
 
 			let data = TokenData { deposit };
-			for _ in 0 .. quantity {
+			for _ in 0..quantity {
 				orml_nft::Pallet::<T>::mint(&to, class_id, metadata.clone(), data.clone())?;
 			}
 

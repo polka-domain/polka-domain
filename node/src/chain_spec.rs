@@ -16,10 +16,13 @@
 // limitations under the License.
 
 use cumulus_primitives_core::ParaId;
-use parachain_runtime::{AccountId, AuraId, DomainRegistrarConfig, Signature};
+use parachain_runtime::{
+	AccountId, AuraId, CurrencyId, DomainRegistrarConfig, Signature, TokenSymbol, TokensConfig,
+};
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup};
 use sc_service::ChainType;
 use serde::{Deserialize, Serialize};
+use serde_json::map::Map;
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 
@@ -61,6 +64,10 @@ where
 }
 
 pub fn development_config(id: ParaId) -> ChainSpec {
+	let mut properties = Map::new();
+	properties.insert("tokenSymbol".into(), "NAME".into());
+	properties.insert("tokenDecimals".into(), 15.into());
+
 	ChainSpec::from_genesis(
 		"Polka Domain Development",
 		"polka_domain_dev",
@@ -79,12 +86,16 @@ pub fn development_config(id: ParaId) -> ChainSpec {
 		vec![],
 		None,
 		None,
-		None,
+		Some(properties),
 		Extensions { relay_chain: "rococo-dev".into(), para_id: id.into() },
 	)
 }
 
 pub fn local_testnet_config(id: ParaId) -> ChainSpec {
+	let mut properties = Map::new();
+	properties.insert("tokenSymbol".into(), "NAME".into());
+	properties.insert("tokenDecimals".into(), 15.into());
+
 	ChainSpec::from_genesis(
 		"Polka Domain Local Testnet",
 		"polka_domain_local_testnet",
@@ -105,12 +116,16 @@ pub fn local_testnet_config(id: ParaId) -> ChainSpec {
 		vec![],
 		None,
 		None,
-		None,
+		Some(properties),
 		Extensions { relay_chain: "rococo-local".into(), para_id: id.into() },
 	)
 }
 
 pub fn genesis_config(id: ParaId) -> ChainSpec {
+	let mut properties = Map::new();
+	properties.insert("tokenSymbol".into(), "NAME".into());
+	properties.insert("tokenDecimals".into(), 15.into());
+
 	ChainSpec::from_genesis(
 		"Polka Domain",
 		"polka_domain_mainnet",
@@ -139,7 +154,7 @@ pub fn genesis_config(id: ParaId) -> ChainSpec {
 		vec![],
 		None,
 		None,
-		None,
+		Some(properties),
 		Extensions { relay_chain: "rococo".into(), para_id: id.into() },
 	)
 }
@@ -166,7 +181,17 @@ fn genesis(
 		aura_ext: Default::default(),
 		parachain_system: Default::default(),
 		orml_nft: Default::default(),
-		tokens: Default::default(),
+		tokens: TokensConfig {
+			balances: endowed_accounts
+				.iter()
+				.flat_map(|x| {
+					vec![
+						(x.clone(), CurrencyId::Token(TokenSymbol::DOT), 10u128.pow(16)),
+						(x.clone(), CurrencyId::Token(TokenSymbol::KSM), 10u128.pow(16)),
+					]
+				})
+				.collect(),
+		},
 		nft: Default::default(),
 		domain_registrar: DomainRegistrarConfig {
 			domains: vec![(
