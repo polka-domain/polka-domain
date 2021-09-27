@@ -346,7 +346,7 @@ pub type Barrier = (
 );
 
 parameter_types! {
-	pub KaruraTreasuryAccount: AccountId = TreasuryPalletId::get().into_account();
+	pub PolkaDomainTreasuryAccount: AccountId = TreasuryPalletId::get().into_account();
 }
 
 pub struct ToTreasury;
@@ -354,9 +354,9 @@ impl TakeRevenue for ToTreasury {
 	fn take_revenue(revenue: MultiAsset) {
 		if let MultiAsset::ConcreteFungible { id, amount } = revenue {
 			if let Some(currency_id) = CurrencyIdConvert::convert(id) {
-				// ensure KaruraTreasuryAccount have ed for all of the cross-chain asset.
+				// ensure PolkaDomainTreasuryAccount have ed for all of the cross-chain asset.
 				// Ignore the result.
-				let _ = Currency::deposit(currency_id, &KaruraTreasuryAccount::get(), amount);
+				let _ = Currency::deposit(currency_id, &PolkaDomainTreasuryAccount::get(), amount);
 			}
 		}
 	}

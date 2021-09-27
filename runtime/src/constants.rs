@@ -60,7 +60,7 @@ pub mod fee {
 		dollar(currency_id) / 100
 	}
 
-	fn base_tx_in_kar() -> Balance {
+	fn base_tx_in_name() -> Balance {
 		cent(NAME) / 10
 	}
 
@@ -79,8 +79,8 @@ pub mod fee {
 	// impl WeightToFeePolynomial for WeightToFee {
 	// 	type Balance = Balance;
 	// 	fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
-	// 		// in Karura, extrinsic base weight (smallest non-zero weight) is mapped to 1/10 CENT:
-	// 		let p = base_tx_in_kar();
+	// 		// in Polka Domain, extrinsic base weight (smallest non-zero weight) is mapped to 1/10 CENT:
+	// 		let p = base_tx_in_name();
 	// 		let q = Balance::from(ExtrinsicBaseWeight::get());
 	// 		smallvec![WeightToFeeCoefficient {
 	// 			degree: 1,
@@ -94,7 +94,7 @@ pub mod fee {
 	pub fn ksm_per_second() -> u128 {
 		let base_weight = Balance::from(ExtrinsicBaseWeight::get());
 		let base_tx_per_second = (WEIGHT_PER_SECOND as u128) / base_weight;
-		let kar_per_second = base_tx_per_second * base_tx_in_kar();
+		let kar_per_second = base_tx_per_second * base_tx_in_name();
 		kar_per_second / 100
 	}
 }
