@@ -149,7 +149,7 @@ create_currency_id! {
 	#[repr(u8)]
 	pub enum TokenSymbol {
 		// 0 - 19: Acala & Polkadot native tokens
-		NAME("NAME", 13) = 0,
+		NAME("NAME", 12) = 0,
 		AUSD("Acala Dollar", 12) = 1,
 		DOT("Polkadot", 10) = 2,
 		LDOT("Liquid DOT", 10) = 3,
