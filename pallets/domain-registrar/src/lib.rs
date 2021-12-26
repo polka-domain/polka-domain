@@ -212,7 +212,11 @@ pub mod pallet {
 					nft::ClassProperty::Transferable | nft::ClassProperty::Burnable,
 				);
 
-				let data = nft::ClassData { deposit: class_deposit, properties };
+				let data = nft::ClassData {
+					deposit: class_deposit,
+					properties,
+					attributes: Default::default()
+				};
 
 				let class_id = orml_nft::Pallet::<T>::create_class(
 					&owner,
@@ -242,7 +246,7 @@ pub mod pallet {
 				<T as pallet_proxy::Config>::Currency::reserve(&to, total_deposit)
 					.expect("Token mint: reserve  cannot fail while building genesis");
 
-				let token_data = nft::TokenData { deposit };
+				let token_data = nft::TokenData { deposit, attributes: Default::default() };
 				orml_nft::Pallet::<T>::mint(
 					&to,
 					class_id,
@@ -292,7 +296,7 @@ pub mod pallet {
 			ethereum: Option<MultiAddress<T::AccountId, AccountIndex>>,
 			polkadot: Option<MultiAddress<T::AccountId, AccountIndex>>,
 			kusama: Option<MultiAddress<T::AccountId, AccountIndex>>,
-		) -> DispatchResultWithPostInfo {
+		) -> DispatchResult {
 			let who = ensure_signed(origin.clone())?;
 
 			ensure!(
@@ -347,7 +351,7 @@ pub mod pallet {
 			let total_deposit = deposit.saturating_mul(1u32.into());
 			<T as pallet_proxy::Config>::Currency::transfer(&who, &who, total_deposit, KeepAlive)?;
 			<T as pallet_proxy::Config>::Currency::reserve(&who, total_deposit)?;
-			let token_data = nft::TokenData { deposit };
+			let token_data = nft::TokenData { deposit, attributes: Default::default() };
 
 			orml_nft::Pallet::<T>::mint(
 				&who,
@@ -384,11 +388,11 @@ pub mod pallet {
 				(T::NftClassID::get(), token_id.into()),
 			));
 
-			Ok(().into())
+			Ok(())
 		}
 
 		#[pallet::weight(0)]
-		pub fn deregister(origin: OriginFor<T>, domain: Vec<u8>) -> DispatchResultWithPostInfo {
+		pub fn deregister(origin: OriginFor<T>, domain: Vec<u8>) -> DispatchResult {
 			let who = ensure_signed(origin.clone())?;
 
 			let domain_info = <DomainInfos<T>>::take(&domain);
@@ -399,7 +403,7 @@ pub mod pallet {
 
 			Self::deposit_event(Event::DomainDeregistered(who, domain, domain_info.nft_token));
 
-			Ok(().into())
+			Ok(())
 		}
 
 		#[pallet::weight(0)]
@@ -408,7 +412,7 @@ pub mod pallet {
 			target: T::AccountId,
 			_target_domain: Vec<u8>,
 			call: Box<<T as Config>::Call>,
-		) -> DispatchResultWithPostInfo {
+		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
 			let domain = <Domains<T>>::get(&target);
@@ -419,7 +423,7 @@ pub mod pallet {
 
 			Self::deposit_event(Event::Sent(who, domain));
 
-			Ok(().into())
+			Ok(())
 		}
 
 		#[pallet::weight(0)]
@@ -427,10 +431,10 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			to: T::AccountId,
 			domain: Vec<u8>,
-		) -> DispatchResultWithPostInfo {
+		) -> DispatchResult {
 			let who = ensure_signed(origin.clone())?;
 
-			<DomainInfos<T>>::try_mutate(&domain, |domain_info| -> DispatchResultWithPostInfo {
+			<DomainInfos<T>>::try_mutate(&domain, |domain_info| -> DispatchResult {
 				nft::Pallet::<T>::transfer(
 					origin,
 					T::Lookup::unlookup(to.clone()),
@@ -449,10 +453,10 @@ pub mod pallet {
 					domain_info.nft_token,
 				));
 
-				Ok(().into())
+				Ok(())
 			})?;
 
-			Ok(().into())
+			Ok(())
 		}
 
 		#[pallet::weight(0)]
@@ -463,7 +467,7 @@ pub mod pallet {
 			ethereum: Option<MultiAddress<T::AccountId, AccountIndex>>,
 			polkadot: Option<MultiAddress<T::AccountId, AccountIndex>>,
 			kusama: Option<MultiAddress<T::AccountId, AccountIndex>>,
-		) -> DispatchResultWithPostInfo {
+		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
 			if Domains::<T>::contains_key(&who) {
@@ -523,7 +527,7 @@ pub mod pallet {
 				}
 			}
 
-			Ok(().into())
+			Ok(())
 		}
 	}
 }

@@ -141,7 +141,7 @@ pub mod pallet {
 			total0: T::Balance,
 			total1: T::Balance,
 			duration: T::BlockNumber,
-		) -> DispatchResultWithPostInfo {
+		) -> DispatchResult {
 			ensure!(duration > Zero::zero(), Error::<T>::InvalidDuration);
 
 			let creator = ensure_signed(origin)?;
@@ -171,7 +171,7 @@ pub mod pallet {
 
 			Self::deposit_event(Event::PoolCreated(pool_id, creator));
 
-			Ok(().into())
+			Ok(())
 		}
 
 		#[pallet::weight(0)]
@@ -179,7 +179,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			pool_id: T::PoolId,
 			amount1: T::Balance,
-		) -> DispatchResultWithPostInfo {
+		) -> DispatchResult {
 			let buyer = ensure_signed(origin)?;
 
 			Pool::<T>::try_mutate(pool_id, |pool| -> DispatchResult {
@@ -204,7 +204,7 @@ pub mod pallet {
 				Ok(())
 			})?;
 
-			Ok(().into())
+			Ok(())
 		}
 	}
 
