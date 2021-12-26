@@ -29,7 +29,7 @@ pub use nft::NFT;
 use sp_runtime::{
 	generic,
 	traits::{BlakeTwo256, IdentifyAccount, Verify},
-	MultiSignature,
+	MultiSignature, RuntimeDebug,
 };
 
 pub type NFTBalance = u128;
@@ -87,8 +87,7 @@ pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 /// Block ID.
 pub type BlockId = generic::BlockId<Block>;
 
-// TODO remove following lines
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, MaxEncodedLen};
 /// Opaque, encoded, unchecked extrinsic.
 pub use sp_runtime::OpaqueExtrinsic as UncheckedExtrinsic;
 use sp_runtime::TypeId;
@@ -142,3 +141,11 @@ pub const H160_POSITION_DEXSHARE_RIGHT: Range<usize> = 16..20;
 pub const H160_POSITION_ERC20: Range<usize> = 0..20;
 pub const H160_PREFIX_TOKEN: [u8; 19] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0];
 pub const H160_PREFIX_DEXSHARE: [u8; 12] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
+
+#[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord, MaxEncodedLen)]
+#[repr(u8)]
+pub enum ReserveIdentifier {
+	Nft,
+	// always the last, indicate number of variants
+	Count,
+}

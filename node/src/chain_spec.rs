@@ -192,7 +192,6 @@ fn genesis(
 				})
 				.collect(),
 		},
-		nft: Default::default(),
 		domain_registrar: DomainRegistrarConfig {
 			domains: vec![(
 				get_account_id_from_seed::<sr25519::Public>("Alice"),
