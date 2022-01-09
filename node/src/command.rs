@@ -21,6 +21,7 @@ use codec::Encode;
 use cumulus_client_service::genesis::generate_genesis_block;
 use cumulus_primitives_core::ParaId;
 use log::info;
+use polka_domain_primitives::Block;
 use polkadot_parachain::primitives::AccountIdConversion;
 use sc_cli::{
 	ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams,
@@ -203,7 +204,7 @@ pub fn run() -> Result<()> {
 				let polkadot_config = SubstrateCli::create_configuration(
 					&polkadot_cli,
 					&polkadot_cli,
-					config.task_executor.clone(),
+					config.tokio_handle.clone(),
 				)
 				.map_err(|err| format!("Relay chain argument error: {}", err))?;
 
@@ -218,7 +219,7 @@ pub fn run() -> Result<()> {
 			builder.with_profiling(sc_tracing::TracingReceiver::Log, "");
 			let _ = builder.init();
 
-			let block: crate::service::Block = generate_genesis_block(&load_spec(
+			let block: Block = generate_genesis_block(&load_spec(
 				&params.chain.clone().unwrap_or_default(),
 				params.parachain_id.unwrap_or(100).into(),
 			)?)?;
@@ -277,13 +278,13 @@ pub fn run() -> Result<()> {
 				let parachain_account =
 					AccountIdConversion::<polkadot_primitives::v0::AccountId>::into_account(&id);
 
-				let block: crate::service::Block =
+				let block: Block =
 					generate_genesis_block(&config.chain_spec).map_err(|e| format!("{:?}", e))?;
 				let genesis_state = format!("0x{:?}", HexDisplay::from(&block.header().encode()));
 
-				let task_executor = config.task_executor.clone();
+				let tokio_handle = config.tokio_handle.clone();
 				let polkadot_config =
-					SubstrateCli::create_configuration(&polkadot_cli, &polkadot_cli, task_executor)
+					SubstrateCli::create_configuration(&polkadot_cli, &polkadot_cli, tokio_handle)
 						.map_err(|err| format!("Relay chain argument error: {}", err))?;
 
 				info!("Parachain id: {:?}", id);
@@ -389,10 +390,6 @@ impl CliConfiguration<Self> for RelayChainCli {
 
 	fn rpc_cors(&self, is_dev: bool) -> Result<Option<Vec<String>>> {
 		self.base.base.rpc_cors(is_dev)
-	}
-
-	fn telemetry_external_transport(&self) -> Result<Option<sc_service::config::ExtTransport>> {
-		self.base.base.telemetry_external_transport()
 	}
 
 	fn default_heap_pages(&self) -> Result<Option<u64>> {
