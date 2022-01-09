@@ -18,6 +18,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::{Decode, Encode};
+use scale_info::TypeInfo;
 use frame_support::{
 	dispatch::PostDispatchInfo,
 	traits::{Currency, ExistenceRequirement::KeepAlive},
@@ -37,7 +38,7 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Default, RuntimeDebug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Default, RuntimeDebug, TypeInfo)]
 pub struct DomainInfo<AccountId, Balance, ClassId, TokenId, MultiAddress> {
 	native: AccountId,
 	bitcoin: Option<MultiAddress>,
@@ -136,7 +137,6 @@ pub mod pallet {
 	);
 
 	#[pallet::event]
-	#[pallet::metadata(T::AccountId = "AccountId", BalanceOf<T> = "Balance", ClassIdOf<T> = "ClassId", TokenIdOf<T> = "TokenId")]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		DomainRegistered(

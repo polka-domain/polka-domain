@@ -28,7 +28,7 @@ use codec::{Decode, Encode};
 
 pub use frame_support::{
 	construct_runtime, match_type, parameter_types,
-	traits::{Contains, Everything, Get, IsInVec, Randomness},
+	traits::{Contains, Everything, Get, IsInVec, Nothing, Randomness},
 	weights::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
 		DispatchClass, IdentityFee, Weight,
@@ -70,14 +70,12 @@ use xcm_builder::{
 	EnsureXcmOrigin, FixedRateOfFungible, FixedWeightBounds, LocationInverter,
 	ParentAsSuperuser, ParentIsDefault, RelayChainAsNative, SiblingParachainAsNative,
 	SiblingParachainConvertsVia, SignedAccountId32AsNative, SignedToAccountId32,
-	SovereignSignedViaLocation, TakeRevenue, TakeWeightCredit,
+	SovereignSignedViaLocation, TakeRevenue, TakeWeightCredit, UsingComponents,
 };
 use xcm_executor::XcmExecutor;
 
 pub use constants::{fee::*, time::*};
 pub mod constants;
-
-pub type SessionHandlers = ();
 
 impl_opaque_keys! {
 	pub struct SessionKeys {
@@ -88,8 +86,8 @@ impl_opaque_keys! {
 /// This runtime version.
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-	spec_name: create_runtime_str!("polka-domain-parachain"),
-	impl_name: create_runtime_str!("polka-domain-parachain"),
+	spec_name: create_runtime_str!("polka-domain"),
+	impl_name: create_runtime_str!("polka-domain"),
 	authoring_version: 1,
 	spec_version: 1,
 	impl_version: 0,
@@ -230,9 +228,14 @@ impl pallet_balances::Config for Runtime {
 	type WeightInfo = ();
 }
 
+parameter_types! {
+	pub const OperationalFeeMultiplier: u8 = 5;
+}
+
 impl pallet_transaction_payment::Config for Runtime {
 	type FeeMultiplierUpdate = ();
 	type OnChargeTransaction = pallet_transaction_payment::CurrencyAdapter<Balances, ()>;
+	type OperationalFeeMultiplier = OperationalFeeMultiplier;
 	type TransactionByteFee = TransactionByteFee;
 	type WeightToFee = IdentityFee<Balance>;
 }
@@ -303,10 +306,10 @@ pub type XcmOriginToTransactDispatchOrigin = (
 	// foreign chains who want to have a local sovereign account on this chain which they control.
 	SovereignSignedViaLocation<LocationToAccountId, Origin>,
 	// Native converter for Relay-chain (Parent) location; will converts to a `Relay` origin when
-	// recognised.
+	// recognized.
 	RelayChainAsNative<RelayChainOrigin, Origin>,
 	// Native converter for sibling Parachains; will convert to a `SiblingPara` origin when
-	// recognised.
+	// recognized.
 	SiblingParachainAsNative<cumulus_pallet_xcm::Origin, Origin>,
 	// Superuser converter for the Relay-chain (Parent) location. This will allow it to issue a
 	// transaction from the Root origin.
@@ -323,6 +326,7 @@ parameter_types! {
 	pub UnitWeightCost: Weight = 1_000_000;
 	// One NAME buys 1 second of weight.
 	pub const WeightPrice: (MultiLocation, u128) = (MultiLocation::parent(), NAME);
+	pub const MaxInstructions: u32 = 100;
 }
 
 match_type! {
@@ -383,7 +387,6 @@ pub type XcmOriginToCallOrigin = (
 
 parameter_types! {
 	// One XCM operation is 200_000_000 weight, cross-chain transfer ~= 2x of transfer.
-	// pub const UnitWeightCost: Weight = 200_000_000;
 	pub KsmPerSecond: (AssetId, u128) = (MultiLocation::parent().into(), ksm_per_second());
 }
 
@@ -393,6 +396,8 @@ pub type Trader = (
 
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {
+	type AssetTrap = PolkadotXcm;
+	type AssetClaims = PolkadotXcm;
 	// How to withdraw and deposit an asset.
 	type AssetTransactor = LocalAssetTransactor;
 	type Barrier = Barrier;
@@ -402,16 +407,15 @@ impl xcm_executor::Config for XcmConfig {
 	type IsTeleporter = ();
 	// <- should be enough to allow teleportation of NAME
 	type LocationInverter = LocationInverter<Ancestry>;
-	type OriginConverter = XcmOriginToCallOrigin;
-	type ResponseHandler = ();
-	// Only receiving KSM is handled, and all fees must be paid in KSM.
-	type Trader = Trader;
-	type Weigher = FixedWeightBounds<UnitWeightCost, Call>;
-	type XcmSender = XcmRouter; // Don't handle responses for now.
+	type OriginConverter = XcmOriginToTransactDispatchOrigin;
+	type ResponseHandler = PolkadotXcm;
+	type Trader = UsingComponents<IdentityFee<Balance>, RocLocation, AccountId, Balances, ()>;
+	type Weigher = FixedWeightBounds<UnitWeightCost, Call, MaxInstructions>;
+	type XcmSender = XcmRouter;
 	type SubscriptionService = PolkadotXcm;
 }
 
-/// No local origins on this chain are allowed to dispatch XCM sends/executions.
+/// Local origins on this chain are allowed to dispatch XCM sends/executions.
 pub type LocalOriginToLocation = SignedToAccountId32<Origin, AccountId, RococoNetwork>;
 
 /// The means for routing XCM messages which are not for local execution into the right message
@@ -427,13 +431,19 @@ impl pallet_xcm::Config for Runtime {
 	type Event = Event;
 	type ExecuteXcmOrigin = EnsureXcmOrigin<Origin, LocalOriginToLocation>;
 	type SendXcmOrigin = EnsureXcmOrigin<Origin, LocalOriginToLocation>;
-	type Weigher = FixedWeightBounds<UnitWeightCost, Call>;
+	type Weigher = FixedWeightBounds<UnitWeightCost, Call, MaxInstructions>;
 	type XcmExecuteFilter = Everything;
 	type XcmExecutor = XcmExecutor<XcmConfig>;
-	type XcmReserveTransferFilter = ();
+	type XcmReserveTransferFilter = Nothing;
 	type XcmRouter = XcmRouter;
 	type XcmTeleportFilter = Everything;
 	type LocationInverter = LocationInverter<Ancestry>;
+	type Origin = Origin;
+	type Call = Call;
+
+	const VERSION_DISCOVERY_QUEUE_SIZE: u32 = 100;
+	// Override for AdvertisedXcmVersion default
+	type AdvertisedXcmVersion = pallet_xcm::CurrentXcmVersion;
 }
 
 impl cumulus_pallet_xcm::Config for Runtime {
@@ -461,9 +471,15 @@ impl cumulus_ping::Config for Runtime {
 	type XcmSender = XcmRouter;
 }
 
+parameter_types! {
+	pub const MaxAuthorities: u32 = 100_000;
+}
+
+
 impl pallet_aura::Config for Runtime {
 	type AuthorityId = AuraId;
 	type DisabledValidators = ();
+	type MaxAuthorities = MaxAuthorities;
 }
 
 parameter_types! {
@@ -503,8 +519,8 @@ impl nft::Config for Runtime {
 }
 
 parameter_types! {
-	pub const MaxClassMetadata: u32 = 256;
-	pub const MaxTokenMetadata: u32 = 256;
+	pub const MaxClassMetadata: u32 = 1024;
+	pub const MaxTokenMetadata: u32 = 1024;
 }
 
 impl orml_nft::Config for Runtime {
@@ -564,7 +580,6 @@ impl Contains<AccountId> for DustRemovalWhitelist {
 	}
 }
 
-// Pallet accounts of runtime
 parameter_types! {
 	pub const TreasuryPalletId: PalletId = PalletId(*b"pol/trsy");
 	pub TreasuryAccount: AccountId = TreasuryPalletId::get().into_account();
@@ -728,7 +743,7 @@ impl orml_xtokens::Config for Runtime {
 	type AccountIdToMultiLocation = AccountIdToMultiLocation;
 	type SelfLocation = SelfLocation;
 	type XcmExecutor = XcmExecutor<XcmConfig>;
-	type Weigher = FixedWeightBounds<UnitWeightCost, Call>;
+	type Weigher = FixedWeightBounds<UnitWeightCost, Call, MaxInstructions>;
 	type BaseXcmWeight = BaseXcmWeight;
 	type LocationInverter = LocationInverter<Ancestry>;
 }
@@ -846,7 +861,7 @@ impl_runtime_apis! {
 
 	impl sp_api::Metadata<Block> for Runtime {
 		fn metadata() -> OpaqueMetadata {
-			Runtime::metadata().into()
+			OpaqueMetadata::new(Runtime::metadata().into())
 		}
 	}
 
@@ -904,7 +919,28 @@ impl_runtime_apis! {
 		}
 
 		fn authorities() -> Vec<AuraId> {
-			Aura::authorities()
+			Aura::authorities().into_inner()
+		}
+	}
+
+	impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index> for Runtime {
+		fn account_nonce(account: AccountId) -> Index {
+			System::account_nonce(account)
+		}
+	}
+
+	impl pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<Block, Balance> for Runtime {
+		fn query_info(
+			uxt: <Block as BlockT>::Extrinsic,
+			len: u32,
+		) -> pallet_transaction_payment_rpc_runtime_api::RuntimeDispatchInfo<Balance> {
+			TransactionPayment::query_info(uxt, len)
+		}
+		fn query_fee_details(
+			uxt: <Block as BlockT>::Extrinsic,
+			len: u32,
+		) -> pallet_transaction_payment::FeeDetails<Balance> {
+			TransactionPayment::query_fee_details(uxt, len)
 		}
 	}
 

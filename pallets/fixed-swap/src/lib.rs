@@ -18,13 +18,14 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::{Decode, Encode};
+use scale_info::TypeInfo;
 use frame_support::RuntimeDebug;
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
 pub use pallet::*;
 use sp_runtime::traits::{AtLeast32BitUnsigned, Saturating, Zero};
 use sp_std::prelude::*;
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
 pub struct PoolDetails<AccountId, Balance, BlockNumber, TokenId> {
 	name: Vec<u8>,
 	creator: AccountId,
@@ -116,7 +117,6 @@ pub mod pallet {
 	>;
 
 	#[pallet::event]
-	#[pallet::metadata(T::AccountId = "AccountId", T::PoolId = "PoolId")]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		PoolCreated(T::PoolId, T::AccountId),

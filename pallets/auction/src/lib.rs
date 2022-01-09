@@ -18,6 +18,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::{Decode, Encode};
+use scale_info::TypeInfo;
 use frame_support::{transactional, RuntimeDebug};
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
 pub use pallet::*;
@@ -31,7 +32,7 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default)]
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
 pub struct AuctionDetails<AccountId, Balance, BlockNumber, ClassId, TokenId> {
 	creator: AccountId,
 	winner: Option<AccountId>,
@@ -135,15 +136,6 @@ pub mod pallet {
 	>;
 
 	#[pallet::event]
-	#[pallet::metadata(
-		T::AccountId = "AccountId",
-		T::AuctionId = "AuctionId",
-		T::Balance = "Balance",
-		T::ClassId = "ClassId",
-		T::TokenId = "TokenId",
-		CurrencyId = "CurrencyId",
-		T::BlockNumber = "BlockNumber"
-	)]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		AuctionCreated(
