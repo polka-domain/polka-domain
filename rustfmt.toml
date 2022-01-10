@@ -22,3 +22,5 @@ spaces_around_ranges = false
 trailing_comma = "Vertical"
 trailing_semicolon = false
 use_field_init_shorthand = true
+
+license_template_path = "HEADER-APACHE2"
