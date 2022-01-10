@@ -15,9 +15,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::{mock::*, Error};
 use frame_support::{assert_noop, assert_ok};
 use sp_runtime::MultiAddress;
+
+use crate::{mock::*, Error};
 
 #[test]
 fn test_register() {
@@ -116,8 +117,8 @@ fn test_register() {
 				ethereum: Some(MultiAddress::Address20([
 					1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
 				])),
-				polkadot: Some(MultiAddress::Id(0)), //todo only vec<u8> 32 can convert to AccountId
-				kusama: Some(MultiAddress::Id(1)),   //todo only vec<u8> 32 can convert to AccountId
+				polkadot: Some(MultiAddress::Id(0)), // todo only vec<u8> 32 can convert to AccountId
+				kusama: Some(MultiAddress::Id(1)),   // todo only vec<u8> 32 can convert to AccountId
 				deposit: 1,
 				nft_token: (0, 1)
 			}

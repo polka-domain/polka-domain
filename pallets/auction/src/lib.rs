@@ -18,11 +18,11 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::{Decode, Encode};
-use scale_info::TypeInfo;
 use frame_support::{transactional, RuntimeDebug};
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
 pub use pallet::*;
 use primitives::{CurrencyId, NFT};
+use scale_info::TypeInfo;
 use sp_runtime::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 use sp_std::prelude::*;
 

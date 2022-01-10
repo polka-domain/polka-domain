@@ -2,7 +2,7 @@
 name = "primitives-proc-macro"
 version = "1.3.0"
 authors = ["Polka Domain Developers"]
-edition = "2018"
+edition = "2021"
 
 [lib]
 proc-macro = true

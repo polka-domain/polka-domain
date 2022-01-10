@@ -24,9 +24,10 @@ pub mod evm;
 pub mod nft;
 
 use core::ops::Range;
-use scale_info::TypeInfo;
+
 pub use currency::{CurrencyId, TokenSymbol};
 pub use nft::NFT;
+use scale_info::TypeInfo;
 use sp_runtime::{
 	generic,
 	traits::{BlakeTwo256, IdentifyAccount, Verify},
@@ -143,7 +144,19 @@ pub const H160_POSITION_ERC20: Range<usize> = 0..20;
 pub const H160_PREFIX_TOKEN: [u8; 19] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0];
 pub const H160_PREFIX_DEXSHARE: [u8; 12] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
 
-#[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord, MaxEncodedLen, TypeInfo)]
+#[derive(
+	Encode,
+	Decode,
+	Eq,
+	PartialEq,
+	Copy,
+	Clone,
+	RuntimeDebug,
+	PartialOrd,
+	Ord,
+	MaxEncodedLen,
+	TypeInfo,
+)]
 #[repr(u8)]
 pub enum ReserveIdentifier {
 	Nft,

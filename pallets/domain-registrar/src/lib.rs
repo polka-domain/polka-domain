@@ -18,7 +18,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::{Decode, Encode};
-use scale_info::TypeInfo;
 use frame_support::{
 	dispatch::PostDispatchInfo,
 	traits::{Currency, ExistenceRequirement::KeepAlive},
@@ -26,6 +25,7 @@ use frame_support::{
 };
 pub use pallet::*;
 pub use primitives::AccountIndex;
+use scale_info::TypeInfo;
 use sp_runtime::{
 	traits::{AccountIdConversion, Dispatchable, Saturating, StaticLookup, Zero},
 	MultiAddress, RuntimeDebug,
@@ -148,7 +148,7 @@ pub mod pallet {
 			Option<MultiAddress<T::AccountId, AccountIndex>>,
 			BalanceOf<T>,
 			(T::ClassId, T::TokenId),
-		), /* todo add tokenid and classid */
+		), // todo add tokenid and classid
 		DomainDeregistered(T::AccountId, Vec<u8>, (T::ClassId, T::TokenId)), /* todo add tokenid and classid */
 		Sent(T::AccountId, Vec<u8>),
 		Transfer(T::AccountId, T::AccountId, Vec<u8>, (T::ClassId, T::TokenId)), /* todo add tokenid and classid */
@@ -215,7 +215,7 @@ pub mod pallet {
 				let data = nft::ClassData {
 					deposit: class_deposit,
 					properties,
-					attributes: Default::default()
+					attributes: Default::default(),
 				};
 
 				let class_id = orml_nft::Pallet::<T>::create_class(
@@ -427,11 +427,7 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(0)]
-		pub fn transfer(
-			origin: OriginFor<T>,
-			to: T::AccountId,
-			domain: Vec<u8>,
-		) -> DispatchResult {
+		pub fn transfer(origin: OriginFor<T>, to: T::AccountId, domain: Vec<u8>) -> DispatchResult {
 			let who = ensure_signed(origin.clone())?;
 
 			<DomainInfos<T>>::try_mutate(&domain, |domain_info| -> DispatchResult {

@@ -63,7 +63,7 @@ where
 	AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
 }
 
-pub fn development_config(id: ParaId) -> ChainSpec {
+pub fn development_config() -> ChainSpec {
 	let mut properties = Map::new();
 	properties.insert("tokenSymbol".into(), "NAME".into());
 	properties.insert("tokenDecimals".into(), 15.into());
@@ -80,18 +80,18 @@ pub fn development_config(id: ParaId) -> ChainSpec {
 					get_account_id_from_seed::<sr25519::Public>("Alice"),
 					get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
 				],
-				id,
+				3000.into(),
 			)
 		},
 		vec![],
 		None,
 		None,
 		Some(properties),
-		Extensions { relay_chain: "rococo-dev".into(), para_id: id.into() },
+		Extensions { relay_chain: "rococo-dev".into(), para_id: 3000 },
 	)
 }
 
-pub fn local_testnet_config(id: ParaId) -> ChainSpec {
+pub fn local_testnet_config() -> ChainSpec {
 	let mut properties = Map::new();
 	properties.insert("tokenSymbol".into(), "NAME".into());
 	properties.insert("tokenDecimals".into(), 15.into());
@@ -110,18 +110,18 @@ pub fn local_testnet_config(id: ParaId) -> ChainSpec {
 					get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
 					get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
 				],
-				id,
+				3000.into(),
 			)
 		},
 		vec![],
 		None,
 		None,
 		Some(properties),
-		Extensions { relay_chain: "rococo-local".into(), para_id: id.into() },
+		Extensions { relay_chain: "rococo-local".into(), para_id: 3000 },
 	)
 }
 
-pub fn genesis_config(id: ParaId) -> ChainSpec {
+pub fn genesis_config() -> ChainSpec {
 	let mut properties = Map::new();
 	properties.insert("tokenSymbol".into(), "NAME".into());
 	properties.insert("tokenDecimals".into(), 15.into());
@@ -148,14 +148,14 @@ pub fn genesis_config(id: ParaId) -> ChainSpec {
 					get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
 					get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
 				],
-				id,
+				3000.into(),
 			)
 		},
 		vec![],
 		None,
 		None,
 		Some(properties),
-		Extensions { relay_chain: "rococo".into(), para_id: id.into() },
+		Extensions { relay_chain: "rococo".into(), para_id: 3000 },
 	)
 }
 
@@ -170,7 +170,6 @@ fn genesis(
 			code: parachain_runtime::WASM_BINARY
 				.expect("WASM binary was not build, please build it!")
 				.to_vec(),
-			changes_trie_config: Default::default(),
 		},
 		balances: parachain_runtime::BalancesConfig {
 			balances: endowed_accounts.iter().cloned().map(|k| (k, 1 << 60)).collect(),

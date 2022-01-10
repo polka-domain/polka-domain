@@ -1,34 +1,33 @@
-// This file is part of Acala.
+// This file is part of Polka Domain.
 
-// Copyright (C) 2020-2021 Acala Foundation.
-// SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
+// Copyright (C) 2021 Polka Domain.
+// SPDX-License-Identifier: Apache-2.0
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program. If not, see <https://www.gnu.org/licenses/>.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #![allow(clippy::from_over_into)]
 
-use crate::{evm::EvmAddress, *};
 use bstringify::bstringify;
 use codec::{Decode, Encode};
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
 use sp_runtime::RuntimeDebug;
 use sp_std::{
 	convert::{Into, TryFrom},
 	prelude::*,
 };
 
-#[cfg(feature = "std")]
-use serde::{Deserialize, Serialize};
+use crate::{evm::EvmAddress, *};
 
 macro_rules! create_currency_id {
     ($(#[$meta:meta])*
@@ -219,7 +218,7 @@ impl CurrencyId {
 				let currency_id_0: CurrencyId = (*dex_share_0).into();
 				let currency_id_1: CurrencyId = (*dex_share_1).into();
 				Some((currency_id_0, currency_id_1))
-			}
+			},
 			_ => None,
 		}
 	}
@@ -245,13 +244,13 @@ impl From<DexShare> for u32 {
 		match val {
 			DexShare::Token(token) => {
 				bytes[3] = token.into();
-			}
+			},
 			DexShare::Erc20(address) => {
 				let is_zero = |&&d: &&u8| -> bool { d == 0 };
 				let leading_zeros = address.as_bytes().iter().take_while(is_zero).count();
 				let index = if leading_zeros > 16 { 16 } else { leading_zeros };
 				bytes[..].copy_from_slice(&address[index..index + 4][..]);
-			}
+			},
 		}
 		u32::from_be_bytes(bytes)
 	}
@@ -278,9 +277,9 @@ impl TryFrom<CurrencyId> for EvmAddress {
 
 				let mut prefix = EvmAddress::default();
 				prefix[0..H160_PREFIX_DEXSHARE.len()].copy_from_slice(&H160_PREFIX_DEXSHARE);
-				Ok(prefix
-					| EvmAddress::from_low_u64_be(u64::from(symbol_0) << 32 | u64::from(symbol_1)))
-			}
+				Ok(prefix |
+					EvmAddress::from_low_u64_be(u64::from(symbol_0) << 32 | u64::from(symbol_1)))
+			},
 			CurrencyId::Erc20(address) => Ok(address),
 		}
 	}
