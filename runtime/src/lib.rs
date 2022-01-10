@@ -66,11 +66,12 @@ use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 use xcm::latest::prelude::*;
 use xcm_builder::{
-	AccountId32Aliases, AllowTopLevelPaidExecutionFrom, AllowUnpaidExecutionFrom,
-	EnsureXcmOrigin, FixedRateOfFungible, FixedWeightBounds, LocationInverter,
-	ParentAsSuperuser, ParentIsDefault, RelayChainAsNative, SiblingParachainAsNative,
-	SiblingParachainConvertsVia, SignedAccountId32AsNative, SignedToAccountId32,
-	SovereignSignedViaLocation, TakeRevenue, TakeWeightCredit, UsingComponents,
+	AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
+	AllowTopLevelPaidExecutionFrom, AllowUnpaidExecutionFrom, EnsureXcmOrigin, FixedRateOfFungible,
+	FixedWeightBounds, LocationInverter, ParentAsSuperuser, ParentIsDefault, RelayChainAsNative,
+	SiblingParachainAsNative, SiblingParachainConvertsVia, SignedAccountId32AsNative,
+	SignedToAccountId32, SovereignSignedViaLocation, TakeRevenue, TakeWeightCredit,
+	UsingComponents,
 };
 use xcm_executor::XcmExecutor;
 
@@ -167,7 +168,7 @@ impl frame_system::Config for Runtime {
 	type BlockWeights = RuntimeBlockWeights;
 	/// The aggregated dispatch type that is available for extrinsics.
 	type Call = Call;
-	type DbWeight = ();
+	type DbWeight = RocksDbWeight;
 	/// The ubiquitous event type.
 	type Event = Event;
 	/// The type for hashing blocks and tries.
@@ -322,8 +323,8 @@ pub type XcmOriginToTransactDispatchOrigin = (
 );
 
 parameter_types! {
-	// One XCM operation is 1_000_000 weight - almost certainly a conservative estimate.
-	pub UnitWeightCost: Weight = 1_000_000;
+	// One XCM operation is 1_000_000_000 weight - almost certainly a conservative estimate.
+	pub UnitWeightCost: Weight = 1_000_000_000;
 	// One NAME buys 1 second of weight.
 	pub const WeightPrice: (MultiLocation, u128) = (MultiLocation::parent(), NAME);
 	pub const MaxInstructions: u32 = 100;
@@ -335,12 +336,22 @@ match_type! {
 		MultiLocation { parents: 1, interior: X1(Plurality { id: BodyId::Unit, .. }) }
 	};
 }
+match_type! {
+	pub type Statemint: impl Contains<MultiLocation> = {
+		MultiLocation { parents: 1, interior: X1(Parachain(1000)) }
+	};
+}
 
 pub type Barrier = (
 	TakeWeightCredit,
 	AllowTopLevelPaidExecutionFrom<Everything>,
 	AllowUnpaidExecutionFrom<ParentOrParentsUnitPlurality>,
 	// ^^^ Parent & its unit plurality gets free execution
+	AllowUnpaidExecutionFrom<Statemint>,
+	// Expected responses are OK.
+	AllowKnownQueryResponses<PolkadotXcm>,
+	// Subscriptions for version tracking are OK.
+	AllowSubscriptionsFrom<Everything>,
 );
 
 parameter_types! {
@@ -350,15 +361,12 @@ parameter_types! {
 pub struct ToTreasury;
 impl TakeRevenue for ToTreasury {
 	fn take_revenue(revenue: MultiAsset) {
-		if let MultiAsset {
-			id: Concrete(location),
-			fun: Fungible(amount),
-		} = revenue
-		{
+		if let MultiAsset { id: Concrete(location), fun: Fungible(amount) } = revenue {
 			if let Some(currency_id) = CurrencyIdConvert::convert(location) {
 				// ensure PolkaDomainTreasuryAccount have ed for all of the cross-chain asset.
 				// Ignore the result.
-				let _ = Currencies::deposit(currency_id, &PolkaDomainTreasuryAccount::get(), amount);
+				let _ =
+					Currencies::deposit(currency_id, &PolkaDomainTreasuryAccount::get(), amount);
 			}
 		}
 	}
@@ -390,9 +398,7 @@ parameter_types! {
 	pub KsmPerSecond: (AssetId, u128) = (MultiLocation::parent().into(), ksm_per_second());
 }
 
-pub type Trader = (
-	FixedRateOfFungible<KsmPerSecond, ToTreasury>,
-);
+pub type Trader = (FixedRateOfFungible<KsmPerSecond, ToTreasury>,);
 
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {
@@ -474,7 +480,6 @@ impl cumulus_ping::Config for Runtime {
 parameter_types! {
 	pub const MaxAuthorities: u32 = 100_000;
 }
-
 
 impl pallet_aura::Config for Runtime {
 	type AuthorityId = AuraId;
@@ -680,13 +685,12 @@ impl Convert<MultiLocation, Option<CurrencyId>> for CurrencyIdConvert {
 		use TokenSymbol::*;
 
 		if location == MultiLocation::parent() {
-			return Some(Token(DOT));
+			return Some(Token(DOT))
 		}
 		match location {
-			MultiLocation {
-				parents,
-				interior: X2(Parachain(para_id), GeneralKey(key)),
-			} if parents == 1 => {
+			MultiLocation { parents, interior: X2(Parachain(para_id), GeneralKey(key)) }
+				if parents == 1 =>
+			{
 				match (para_id, &key[..]) {
 					(id, key) if id == u32::from(ParachainInfo::get()) => {
 						if let Ok(currency_id) = CurrencyId::decode(&mut &*key) {
@@ -699,20 +703,17 @@ impl Convert<MultiLocation, Option<CurrencyId>> for CurrencyIdConvert {
 							// invalid general key
 							None
 						}
-					}
+					},
 					_ => None,
 				}
-			}
+			},
 			_ => None,
 		}
 	}
 }
 impl Convert<MultiAsset, Option<CurrencyId>> for CurrencyIdConvert {
 	fn convert(asset: MultiAsset) -> Option<CurrencyId> {
-		if let MultiAsset {
-			id: Concrete(location), ..
-		} = asset
-		{
+		if let MultiAsset { id: Concrete(location), .. } = asset {
 			Self::convert(location)
 		} else {
 			None

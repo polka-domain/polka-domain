@@ -32,8 +32,7 @@ use frame_support::{
 	transactional, PalletId,
 };
 use frame_system::pallet_prelude::*;
-use primitives::NFT;
-use primitives::{NFTBalance, ReserveIdentifier};
+use primitives::{NFTBalance, ReserveIdentifier, NFT};
 use scale_info::{build::Fields, meta_type, Path, Type, TypeInfo, TypeParameter};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -80,9 +79,7 @@ impl Encode for Properties {
 impl Decode for Properties {
 	fn decode<I: codec::Input>(input: &mut I) -> sp_std::result::Result<Self, codec::Error> {
 		let field = u8::decode(input)?;
-		Ok(Self(
-			<BitFlags<ClassProperty>>::from_bits(field as u8).map_err(|_| "invalid value")?,
-		))
+		Ok(Self(<BitFlags<ClassProperty>>::from_bits(field as u8).map_err(|_| "invalid value")?))
 	}
 }
 
@@ -119,8 +116,9 @@ pub struct TokenData<Balance> {
 
 pub type TokenIdOf<T> = <T as orml_nft::Config>::TokenId;
 pub type ClassIdOf<T> = <T as orml_nft::Config>::ClassId;
-pub type BalanceOf<T> =
-<<T as pallet_proxy::Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+pub type BalanceOf<T> = <<T as pallet_proxy::Config>::Currency as Currency<
+	<T as frame_system::Config>::AccountId,
+>>::Balance;
 
 #[frame_support::pallet]
 pub mod module {
@@ -130,9 +128,11 @@ pub mod module {
 
 	#[pallet::config]
 	pub trait Config:
-	frame_system::Config
-	+ orml_nft::Config<ClassData = ClassData<BalanceOf<Self>>, TokenData = TokenData<BalanceOf<Self>>>
-	+ pallet_proxy::Config
+		frame_system::Config
+		+ orml_nft::Config<
+			ClassData = ClassData<BalanceOf<Self>>,
+			TokenData = TokenData<BalanceOf<Self>>,
+		> + pallet_proxy::Config
 	{
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
@@ -256,13 +256,14 @@ pub mod module {
 			<T as module::Config>::Currency::reserve_named(&RESERVE_ID, &owner, deposit)?;
 
 			// owner add proxy delegate to origin
-			<pallet_proxy::Pallet<T>>::add_proxy_delegate(&owner, who, Default::default(), Zero::zero())?;
+			<pallet_proxy::Pallet<T>>::add_proxy_delegate(
+				&owner,
+				who,
+				Default::default(),
+				Zero::zero(),
+			)?;
 
-			let data = ClassData {
-				deposit,
-				properties,
-				attributes,
-			};
+			let data = ClassData { deposit, properties, attributes };
 			orml_nft::Pallet::<T>::create_class(&owner, metadata, data)?;
 
 			Self::deposit_event(Event::CreatedClass(owner, next_id));
@@ -345,12 +346,10 @@ pub mod module {
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
 			let dest = T::Lookup::lookup(dest)?;
-			let class_info = orml_nft::Pallet::<T>::classes(class_id).ok_or(Error::<T>::ClassIdNotFound)?;
+			let class_info =
+				orml_nft::Pallet::<T>::classes(class_id).ok_or(Error::<T>::ClassIdNotFound)?;
 			ensure!(who == class_info.owner, Error::<T>::NoPermission);
-			ensure!(
-				class_info.total_issuance == Zero::zero(),
-				Error::<T>::CannotDestroyClass
-			);
+			ensure!(class_info.total_issuance == Zero::zero(), Error::<T>::CannotDestroyClass);
 
 			let data = class_info.data;
 
@@ -359,7 +358,12 @@ pub mod module {
 			orml_nft::Pallet::<T>::destroy_class(&who, class_id)?;
 
 			// this should unresere proxy deposit
-			pallet_proxy::Pallet::<T>::remove_proxy_delegate(&who, dest.clone(), Default::default(), Zero::zero())?;
+			pallet_proxy::Pallet::<T>::remove_proxy_delegate(
+				&who,
+				dest.clone(),
+				Default::default(),
+				Zero::zero(),
+			)?;
 
 			<T as module::Config>::Currency::transfer(
 				&who,
@@ -405,8 +409,13 @@ pub mod module {
 
 impl<T: Config> Pallet<T> {
 	#[require_transactional]
-	fn do_transfer(from: &T::AccountId, to: &T::AccountId, token: (ClassIdOf<T>, TokenIdOf<T>)) -> DispatchResult {
-		let class_info = orml_nft::Pallet::<T>::classes(token.0).ok_or(Error::<T>::ClassIdNotFound)?;
+	fn do_transfer(
+		from: &T::AccountId,
+		to: &T::AccountId,
+		token: (ClassIdOf<T>, TokenIdOf<T>),
+	) -> DispatchResult {
+		let class_info =
+			orml_nft::Pallet::<T>::classes(token.0).ok_or(Error::<T>::ClassIdNotFound)?;
 		let data = class_info.data;
 		ensure!(
 			data.properties.0.contains(ClassProperty::Transferable),
@@ -414,11 +423,16 @@ impl<T: Config> Pallet<T> {
 		);
 		ensure!(!<ReserveNFT<T>>::contains_key(token), Error::<T>::NoPermission);
 
-		let token_info = orml_nft::Pallet::<T>::tokens(token.0, token.1).ok_or(Error::<T>::TokenIdNotFound)?;
+		let token_info =
+			orml_nft::Pallet::<T>::tokens(token.0, token.1).ok_or(Error::<T>::TokenIdNotFound)?;
 
 		orml_nft::Pallet::<T>::transfer(from, to, token)?;
 
-		<T as module::Config>::Currency::unreserve_named(&RESERVE_ID, from, token_info.data.deposit);
+		<T as module::Config>::Currency::unreserve_named(
+			&RESERVE_ID,
+			from,
+			token_info.data.deposit,
+		);
 		<T as module::Config>::Currency::transfer(from, to, token_info.data.deposit, AllowDeath)?;
 		<T as module::Config>::Currency::reserve_named(&RESERVE_ID, to, token_info.data.deposit)?;
 
@@ -436,7 +450,8 @@ impl<T: Config> Pallet<T> {
 		quantity: u32,
 	) -> DispatchResult {
 		ensure!(quantity >= 1, Error::<T>::InvalidQuantity);
-		let class_info = orml_nft::Pallet::<T>::classes(class_id).ok_or(Error::<T>::ClassIdNotFound)?;
+		let class_info =
+			orml_nft::Pallet::<T>::classes(class_id).ok_or(Error::<T>::ClassIdNotFound)?;
 		ensure!(who == class_info.owner, Error::<T>::NoPermission);
 
 		ensure!(
@@ -462,21 +477,28 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	fn do_burn(who: T::AccountId, token: (ClassIdOf<T>, TokenIdOf<T>), remark: Option<Vec<u8>>) -> DispatchResult {
-		let class_info = orml_nft::Pallet::<T>::classes(token.0).ok_or(Error::<T>::ClassIdNotFound)?;
+	fn do_burn(
+		who: T::AccountId,
+		token: (ClassIdOf<T>, TokenIdOf<T>),
+		remark: Option<Vec<u8>>,
+	) -> DispatchResult {
+		let class_info =
+			orml_nft::Pallet::<T>::classes(token.0).ok_or(Error::<T>::ClassIdNotFound)?;
 		let data = class_info.data;
-		ensure!(
-			data.properties.0.contains(ClassProperty::Burnable),
-			Error::<T>::NonBurnable
-		);
+		ensure!(data.properties.0.contains(ClassProperty::Burnable), Error::<T>::NonBurnable);
 		ensure!(!<ReserveNFT<T>>::contains_key(token), Error::<T>::NoPermission);
 
-		let token_info = orml_nft::Pallet::<T>::tokens(token.0, token.1).ok_or(Error::<T>::TokenIdNotFound)?;
+		let token_info =
+			orml_nft::Pallet::<T>::tokens(token.0, token.1).ok_or(Error::<T>::TokenIdNotFound)?;
 		ensure!(who == token_info.owner, Error::<T>::NoPermission);
 
 		orml_nft::Pallet::<T>::burn(&who, token)?;
 
-		<T as module::Config>::Currency::unreserve_named(&RESERVE_ID, &who, token_info.data.deposit);
+		<T as module::Config>::Currency::unreserve_named(
+			&RESERVE_ID,
+			&who,
+			token_info.data.deposit,
+		);
 
 		if let Some(remark) = remark {
 			let hash = T::Hashing::hash(&remark[..]);
@@ -488,16 +510,16 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	fn data_deposit(metadata: &[u8], attributes: &Attributes) -> Result<BalanceOf<T>, DispatchError> {
+	fn data_deposit(
+		metadata: &[u8],
+		attributes: &Attributes,
+	) -> Result<BalanceOf<T>, DispatchError> {
 		// Addition can't overflow because we will be out of memory before that
-		let attributes_len = attributes.iter().fold(0, |acc, (k, v)| {
-			acc.saturating_add(v.len().saturating_add(k.len()) as u32)
-		});
+		let attributes_len = attributes
+			.iter()
+			.fold(0, |acc, (k, v)| acc.saturating_add(v.len().saturating_add(k.len()) as u32));
 
-		ensure!(
-			attributes_len <= T::MaxAttributesBytes::get(),
-			Error::<T>::AttributesTooLarge
-		);
+		ensure!(attributes_len <= T::MaxAttributesBytes::get(), Error::<T>::AttributesTooLarge);
 
 		let total_data_len = attributes_len.saturating_add(metadata.len() as u32);
 		Ok(T::DataDepositPerByte::get().saturating_mul(total_data_len.into()))
@@ -541,9 +563,9 @@ impl<T: Config> Pallet<T> {
 }
 
 impl<T: Config> NFT<T::AccountId> for Pallet<T> {
+	type Balance = NFTBalance;
 	type ClassId = ClassIdOf<T>;
 	type TokenId = TokenIdOf<T>;
-	type Balance = NFTBalance;
 
 	fn balance(who: &T::AccountId) -> Self::Balance {
 		orml_nft::TokensByOwner::<T>::iter_prefix((who,)).count() as u128
@@ -553,7 +575,11 @@ impl<T: Config> NFT<T::AccountId> for Pallet<T> {
 		orml_nft::Pallet::<T>::tokens(token.0, token.1).map(|t| t.owner)
 	}
 
-	fn transfer(from: &T::AccountId, to: &T::AccountId, token: (Self::ClassId, Self::TokenId)) -> DispatchResult {
+	fn transfer(
+		from: &T::AccountId,
+		to: &T::AccountId,
+		token: (Self::ClassId, Self::TokenId),
+	) -> DispatchResult {
 		Self::do_transfer(from, to, token)
 	}
 

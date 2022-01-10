@@ -113,7 +113,7 @@ impl InstanceFilter<Call> for ProxyType {
 			ProxyType::Any => true,
 			ProxyType::JustTransfer => {
 				matches!(c, Call::Balances(pallet_balances::Call::transfer(..)))
-			}
+			},
 			ProxyType::JustUtility => matches!(c, Call::Utility(..)),
 		}
 	}
@@ -161,13 +161,13 @@ impl orml_tokens::Config for Runtime {
 	type Amount = Amount;
 	type Balance = Balance;
 	type CurrencyId = CurrencyId;
+	type DustRemovalWhitelist = ();
 	type Event = Event;
 	type ExistentialDeposits = ExistentialDeposits;
 	type MaxLocks = ();
 	type OnDust = ();
-	type WeightInfo = ();
 	type SweepOrigin = frame_system::EnsureRoot<AccountId>;
-	type DustRemovalWhitelist = ();
+	type WeightInfo = ();
 }
 
 pub const NATIVE_CURRENCY_ID: CurrencyId = CurrencyId::Token(TokenSymbol::NAME);

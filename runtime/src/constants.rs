@@ -41,9 +41,10 @@ pub mod time {
 /// Fee-related
 pub mod fee {
 	use frame_support::weights::constants::{ExtrinsicBaseWeight, WEIGHT_PER_SECOND};
-	use primitives::currency::TokenInfo;
-	use primitives::currency::NAME;
-	use primitives::{Balance, CurrencyId};
+	use primitives::{
+		currency::{TokenInfo, NAME},
+		Balance, CurrencyId,
+	};
 	// use runtime_common::{cent, KAR};
 	// use smallvec::smallvec;
 	use sp_runtime::Perbill;

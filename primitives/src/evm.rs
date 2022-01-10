@@ -16,17 +16,19 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use crate::Balance;
 use codec::{Decode, Encode};
 use evm::ExitReason;
+pub use evm::{
+	backend::{Basic as Account, Log},
+	Config,
+};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_core::{H160, U256};
 use sp_runtime::RuntimeDebug;
 use sp_std::vec::Vec;
 
-pub use evm::backend::{Basic as Account, Log};
-pub use evm::Config;
+use crate::Balance;
 
 /// Evm Address.
 pub type EvmAddress = sp_core::H160;

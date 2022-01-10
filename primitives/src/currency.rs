@@ -18,17 +18,17 @@
 
 #![allow(clippy::from_over_into)]
 
-use crate::{evm::EvmAddress, *};
 use bstringify::bstringify;
 use codec::{Decode, Encode};
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
 use sp_runtime::RuntimeDebug;
 use sp_std::{
 	convert::{Into, TryFrom},
 	prelude::*,
 };
 
-#[cfg(feature = "std")]
-use serde::{Deserialize, Serialize};
+use crate::{evm::EvmAddress, *};
 
 macro_rules! create_currency_id {
     ($(#[$meta:meta])*
@@ -219,7 +219,7 @@ impl CurrencyId {
 				let currency_id_0: CurrencyId = (*dex_share_0).into();
 				let currency_id_1: CurrencyId = (*dex_share_1).into();
 				Some((currency_id_0, currency_id_1))
-			}
+			},
 			_ => None,
 		}
 	}
@@ -245,13 +245,13 @@ impl From<DexShare> for u32 {
 		match val {
 			DexShare::Token(token) => {
 				bytes[3] = token.into();
-			}
+			},
 			DexShare::Erc20(address) => {
 				let is_zero = |&&d: &&u8| -> bool { d == 0 };
 				let leading_zeros = address.as_bytes().iter().take_while(is_zero).count();
 				let index = if leading_zeros > 16 { 16 } else { leading_zeros };
 				bytes[..].copy_from_slice(&address[index..index + 4][..]);
-			}
+			},
 		}
 		u32::from_be_bytes(bytes)
 	}
@@ -278,9 +278,9 @@ impl TryFrom<CurrencyId> for EvmAddress {
 
 				let mut prefix = EvmAddress::default();
 				prefix[0..H160_PREFIX_DEXSHARE.len()].copy_from_slice(&H160_PREFIX_DEXSHARE);
-				Ok(prefix
-					| EvmAddress::from_low_u64_be(u64::from(symbol_0) << 32 | u64::from(symbol_1)))
-			}
+				Ok(prefix |
+					EvmAddress::from_low_u64_be(u64::from(symbol_0) << 32 | u64::from(symbol_1)))
+			},
 			CurrencyId::Erc20(address) => Ok(address),
 		}
 	}
