@@ -14,7 +14,7 @@ sp-io = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false }
 sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false }
 sp-std = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13", default-features = false }
-evm = { version = "0.26.0", default-features = false, features = ["with-codec"] }
+evm = { version = "0.33.1", default-features = false, features = ["with-codec"] }
 
 [dev-dependencies]
 frame-support = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
