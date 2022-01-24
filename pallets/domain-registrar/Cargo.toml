@@ -26,7 +26,7 @@ orml-traits = { version = "0.4.1-dev", default-features = false }
 orml-nft = { version = "0.4.1-dev", default-features = false }
 
 [dev-dependencies]
-serde = { version = "1.0.124" }
+serde = { version = "1.0.135" }
 sp-core = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.13" }
 sp-io = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.13" }
 
