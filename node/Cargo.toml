@@ -12,7 +12,7 @@ path = "src/main.rs"
 
 [dependencies]
 derive_more = "0.99.17"
-exit-future = "0.1.4"
+exit-future = "0.2.0"
 futures = { version = "0.3.1", features = ["compat"] }
 log = "0.4.13"
 parking_lot = "0.10.2"
