@@ -384,9 +384,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7862e21c893d65a1650125d157eaeec691439379a1cee17ee49031b79236ada4"
 dependencies = [
  "proc-macro-error",
- "proc-macro2 1.0.36",
- "quote 1.0.14",
- "syn 1.0.85",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -6006,7 +6006,7 @@ dependencies = [
  "log",
  "pallet-transaction-payment-rpc",
  "parity-scale-codec",
- "parking_lot 0.10.2",
+ "parking_lot 0.11.2",
  "polka-domain-primitives",
  "polka-domain-runtime",
  "polkadot-cli",
