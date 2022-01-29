@@ -45,7 +45,7 @@ use pallet_xcm::XcmPassthrough;
 pub use cumulus_primitives_core::ParaId;
 use orml_currencies::BasicCurrencyAdapter;
 use orml_traits::MultiCurrency;
-pub use orml_xcm_support::{IsNativeConcrete, MultiCurrencyAdapter, MultiNativeAsset};
+pub use orml_xcm_support::{DepositToAlternative, IsNativeConcrete, MultiCurrencyAdapter, MultiNativeAsset};
 use polkadot_parachain::primitives::Sibling;
 pub use primitives::{Amount, AuctionId, CurrencyId, ReserveIdentifier, TokenSymbol};
 use sp_api::impl_runtime_apis;
@@ -296,6 +296,7 @@ pub type LocalAssetTransactor = MultiCurrencyAdapter<
 	LocationToAccountId,
 	CurrencyId,
 	CurrencyIdConvert,
+	DepositToAlternative<TreasuryAccount, Currencies, CurrencyId, AccountId, Balance>,
 >;
 
 /// This is the type we use to convert an (incoming) XCM origin into a local `Origin` instance,
