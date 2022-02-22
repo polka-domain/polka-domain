@@ -24,7 +24,7 @@ use frame_support::{
 	weights::GetDispatchInfo,
 };
 pub use pallet::*;
-pub use primitives::AccountIndex;
+pub use primitives::{AccountIndex, nft::{ClassProperty, Properties}};
 use scale_info::TypeInfo;
 use sp_runtime::{
 	traits::{AccountIdConversion, Dispatchable, Saturating, StaticLookup, Zero},
@@ -59,9 +59,6 @@ pub enum AddressChainType {
 
 pub type TokenIdOf<T> = <T as orml_nft::Config>::TokenId;
 pub type ClassIdOf<T> = <T as orml_nft::Config>::ClassId;
-
-pub type CreateClassDepositOf<T> = <T as nft::Config>::CreateClassDeposit;
-pub type CreateTokenDepositOf<T> = <T as nft::Config>::CreateTokenDeposit;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -107,6 +104,7 @@ pub mod pallet {
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
+	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
 
 	#[pallet::storage]
@@ -127,7 +125,7 @@ pub mod pallet {
 			TokenIdOf<T>,
 			MultiAddress<T::AccountId, AccountIndex>,
 		>,
-		ValueQuery,
+		OptionQuery,
 	>;
 
 	pub type GenesisDomainData<T> = (
@@ -208,9 +206,7 @@ pub mod pallet {
 				)
 				.expect("Create class: add_proxy_delegate  cannot fail while building genesis");
 
-				let properties = nft::Properties(
-					nft::ClassProperty::Transferable | nft::ClassProperty::Burnable,
-				);
+				let properties = Properties(ClassProperty::Transferable | ClassProperty::Burnable);
 
 				let data = nft::ClassData {
 					deposit: class_deposit,
@@ -395,13 +391,14 @@ pub mod pallet {
 		pub fn deregister(origin: OriginFor<T>, domain: Vec<u8>) -> DispatchResult {
 			let who = ensure_signed(origin.clone())?;
 
-			let domain_info = <DomainInfos<T>>::take(&domain);
-			nft::Pallet::<T>::burn(origin, domain_info.nft_token)?;
+			if let Some(domain_info) = <DomainInfos<T>>::take(&domain) {
+				nft::Pallet::<T>::burn(origin, domain_info.nft_token)?;
 
-			<Domains<T>>::remove(&who);
-			<T as pallet::Config>::Currency::unreserve(&who, domain_info.deposit);
+				<Domains<T>>::remove(&who);
+				<T as pallet::Config>::Currency::unreserve(&who, domain_info.deposit);
 
-			Self::deposit_event(Event::DomainDeregistered(who, domain, domain_info.nft_token));
+				Self::deposit_event(Event::DomainDeregistered(who, domain, domain_info.nft_token));
+			}
 
 			Ok(())
 		}
@@ -431,23 +428,25 @@ pub mod pallet {
 			let who = ensure_signed(origin.clone())?;
 
 			<DomainInfos<T>>::try_mutate(&domain, |domain_info| -> DispatchResult {
-				nft::Pallet::<T>::transfer(
-					origin,
-					T::Lookup::unlookup(to.clone()),
-					domain_info.nft_token,
-				)?;
+				if let Some(domain_info) = domain_info {
+					nft::Pallet::<T>::transfer(
+						origin,
+						T::Lookup::unlookup(to.clone()),
+						domain_info.nft_token,
+					)?;
 
-				<Domains<T>>::remove(&who);
-				<Domains<T>>::insert(&to, &domain);
+					<Domains<T>>::remove(&who);
+					<Domains<T>>::insert(&to, &domain);
 
-				domain_info.native = to.clone();
+					domain_info.native = to.clone();
 
-				Self::deposit_event(Event::Transfer(
-					who,
-					to,
-					domain.clone(),
-					domain_info.nft_token,
-				));
+					Self::deposit_event(Event::Transfer(
+						who,
+						to,
+						domain.clone(),
+						domain_info.nft_token,
+					));
+				}
 
 				Ok(())
 			})?;
@@ -469,54 +468,56 @@ pub mod pallet {
 			if Domains::<T>::contains_key(&who) {
 				if domain == <Domains<T>>::get(&who) {
 					DomainInfos::<T>::try_mutate(&domain, |domain_info| -> DispatchResult {
-						if let Some(address) = bitcoin.clone() {
-							ensure!(
-								matches!(address, MultiAddress::Raw(_)),
-								Error::<T>::InvalidAddressContent
-							);
-							domain_info.bitcoin = bitcoin.clone();
-						} else {
-							domain_info.bitcoin = None;
-						}
+						if let Some(domain_info) = domain_info {
+							if let Some(address) = bitcoin.clone() {
+								ensure!(
+									matches!(address, MultiAddress::Raw(_)),
+									Error::<T>::InvalidAddressContent
+								);
+								domain_info.bitcoin = bitcoin.clone();
+							} else {
+								domain_info.bitcoin = None;
+							}
 
-						if let Some(address) = ethereum.clone() {
-							ensure!(
-								matches!(address, MultiAddress::Address20(_)),
-								Error::<T>::InvalidAddressContent
-							);
-							domain_info.ethereum = ethereum.clone();
-						} else {
-							domain_info.ethereum = None;
-						}
+							if let Some(address) = ethereum.clone() {
+								ensure!(
+									matches!(address, MultiAddress::Address20(_)),
+									Error::<T>::InvalidAddressContent
+								);
+								domain_info.ethereum = ethereum.clone();
+							} else {
+								domain_info.ethereum = None;
+							}
 
-						if let Some(address) = polkadot.clone() {
-							ensure!(
-								matches!(address, MultiAddress::Id(_)),
-								Error::<T>::InvalidAddressContent
-							);
-							domain_info.polkadot = polkadot.clone();
-						} else {
-							domain_info.polkadot = None;
-						}
+							if let Some(address) = polkadot.clone() {
+								ensure!(
+									matches!(address, MultiAddress::Id(_)),
+									Error::<T>::InvalidAddressContent
+								);
+								domain_info.polkadot = polkadot.clone();
+							} else {
+								domain_info.polkadot = None;
+							}
 
-						if let Some(address) = kusama.clone() {
-							ensure!(
-								matches!(address, MultiAddress::Id(_)),
-								Error::<T>::InvalidAddressContent
-							);
-							domain_info.kusama = kusama.clone();
-						} else {
-							domain_info.kusama = None;
-						}
+							if let Some(address) = kusama.clone() {
+								ensure!(
+									matches!(address, MultiAddress::Id(_)),
+									Error::<T>::InvalidAddressContent
+								);
+								domain_info.kusama = kusama.clone();
+							} else {
+								domain_info.kusama = None;
+							}
 
-						Self::deposit_event(Event::BindAddress(
-							who,
-							domain.clone(),
-							bitcoin,
-							ethereum,
-							polkadot,
-							kusama,
-						));
+							Self::deposit_event(Event::BindAddress(
+								who,
+								domain.clone(),
+								bitcoin,
+								ethereum,
+								polkadot,
+								kusama,
+							));
+						}
 
 						Ok(())
 					})?;

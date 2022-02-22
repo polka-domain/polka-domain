@@ -19,9 +19,10 @@
 
 use codec::{Decode, Encode};
 use frame_support::{transactional, RuntimeDebug};
+use frame_support::traits::tokens::nonfungibles::Transfer as TransferNFT;
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
 pub use pallet::*;
-use primitives::{CurrencyId, NFT};
+use primitives::{CurrencyId, ReserveNFT};
 use scale_info::TypeInfo;
 use sp_runtime::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 use sp_std::prelude::*;
@@ -85,19 +86,15 @@ pub mod pallet {
 		type TokenData: Parameter + Member + MaybeSerializeDeserialize;
 
 		/// The NFT mechanism
-		type NFT: NFT<
-			Self::AccountId,
-			ClassId = Self::ClassId,
-			TokenId = Self::TokenId,
-			Balance = Self::Balance,
-		>;
+		type NFT: TransferNFT<Self::AccountId, ClassId = Self::ClassId, InstanceId = Self::TokenId>
+		+ ReserveNFT<Self::AccountId, ClassId = Self::ClassId, TokenId = Self::TokenId>;
 
 		/// Max auction allow to create in each block
 		type MaxAuction: Get<MaxAuction>;
 	}
 
 	#[pallet::pallet]
-	#[pallet::generate_store(pub(super) trait Store)]
+	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
 
 	/// Next id of a auction
@@ -109,7 +106,7 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn current_winners)]
 	pub(super) type AuctionWinner<T: Config> =
-		StorageMap<_, Blake2_128Concat, T::AuctionId, (T::AccountId, T::Balance), ValueQuery>;
+		StorageMap<_, Blake2_128Concat, T::AuctionId, (T::AccountId, T::Balance), OptionQuery>;
 
 	/// Details of an auction.
 	#[pallet::storage]
@@ -119,7 +116,7 @@ pub mod pallet {
 		Blake2_128Concat,
 		T::AuctionId,
 		AuctionDetails<T::AccountId, T::Balance, T::BlockNumber, T::ClassId, T::TokenId>,
-		ValueQuery,
+		OptionQuery,
 	>;
 
 	/// The end block number of an auction
@@ -215,24 +212,25 @@ pub mod pallet {
 			amount1: T::Balance,
 		) -> DispatchResult {
 			let bidder = ensure_signed(origin)?;
-			let auction = Auction::<T>::get(auction_id);
-			ensure!(amount1 >= auction.min1, Error::<T>::InvalidBidAmount);
+			if let Some(auction) = Auction::<T>::get(auction_id) {
+				ensure!(amount1 >= auction.min1, Error::<T>::InvalidBidAmount);
 
-			let now = frame_system::Pallet::<T>::block_number();
-			ensure!(
-				now <= auction.start_at.saturating_add(auction.duration),
-				Error::<T>::AuctionExpired
-			);
+				let now = frame_system::Pallet::<T>::block_number();
+				ensure!(
+					now <= auction.start_at.saturating_add(auction.duration),
+					Error::<T>::AuctionExpired
+				);
 
-			if AuctionWinner::<T>::contains_key(auction_id) {
-				let (maybe_winner, maybe_winner_amount1) = AuctionWinner::<T>::get(auction_id);
-				ensure!(amount1 > maybe_winner_amount1, Error::<T>::InvalidBidAmount);
-				T::Currency::unreserve(auction.token1, &maybe_winner, maybe_winner_amount1);
+				if AuctionWinner::<T>::contains_key(auction_id) {
+					let (maybe_winner, maybe_winner_amount1) = AuctionWinner::<T>::get(auction_id).unwrap();
+					ensure!(amount1 > maybe_winner_amount1, Error::<T>::InvalidBidAmount);
+					T::Currency::unreserve(auction.token1, &maybe_winner, maybe_winner_amount1);
+				}
+				T::Currency::reserve(auction.token1, &bidder, amount1)?;
+				AuctionWinner::<T>::insert(auction_id, (&bidder, amount1));
+
+				Self::deposit_event(Event::AuctionBid(auction_id, bidder, amount1));
 			}
-			T::Currency::reserve(auction.token1, &bidder, amount1)?;
-			AuctionWinner::<T>::insert(auction_id, (&bidder, amount1));
-
-			Self::deposit_event(Event::AuctionBid(auction_id, bidder, amount1));
 
 			Ok(())
 		}
@@ -240,16 +238,17 @@ pub mod pallet {
 		#[pallet::weight(1000)]
 		pub fn cancel_auction(origin: OriginFor<T>, auction_id: T::AuctionId) -> DispatchResult {
 			let creator = ensure_signed(origin)?;
-			let auction = Auction::<T>::get(auction_id);
-			ensure!(creator == auction.creator, Error::<T>::InvalidCreator);
+			if let Some(auction) = Auction::<T>::get(auction_id) {
+				ensure!(creator == auction.creator, Error::<T>::InvalidCreator);
 
-			let now = frame_system::Pallet::<T>::block_number();
-			ensure!(auction.start_at > now, Error::<T>::AuctionStarted);
+				let now = frame_system::Pallet::<T>::block_number();
+				ensure!(auction.start_at > now, Error::<T>::AuctionStarted);
 
-			T::NFT::unreserve(&auction.creator, auction.token0)?;
-			Auction::<T>::remove(auction_id);
+				T::NFT::unreserve(&auction.creator, auction.token0)?;
+				Auction::<T>::remove(auction_id);
 
-			Self::deposit_event(Event::AuctionCancelled(auction_id));
+				Self::deposit_event(Event::AuctionCancelled(auction_id));
+			}
 
 			Ok(())
 		}
@@ -268,29 +267,33 @@ pub mod pallet {
 		fn on_finalize(now: T::BlockNumber) -> DispatchResult {
 			for (auction_id, _) in AuctionEndAt::<T>::drain_prefix(&now) {
 				Auction::<T>::try_mutate(auction_id, |auction| -> DispatchResult {
-					T::NFT::unreserve(&auction.creator, auction.token0)?;
+					if let Some(auction) = auction {
+						T::NFT::unreserve(&auction.creator, auction.token0)?;
 
-					let mut final_amount = None;
-					if AuctionWinner::<T>::contains_key(auction_id) {
-						let (winner, winner_amount1) = AuctionWinner::<T>::get(auction_id);
-						T::Currency::unreserve(auction.token1, &winner, winner_amount1);
-						T::Currency::transfer(
-							auction.token1,
-							&winner,
-							&auction.creator,
-							winner_amount1,
-						)?;
-						T::NFT::transfer(&auction.creator, &winner, auction.token0)?;
+						let mut final_amount = None;
+						if AuctionWinner::<T>::contains_key(auction_id) {
+							if let Some((winner, winner_amount1)) = AuctionWinner::<T>::get(auction_id) {
+								T::Currency::unreserve(auction.token1, &winner, winner_amount1);
+								T::Currency::transfer(
+									auction.token1,
+									&winner,
+									&auction.creator,
+									winner_amount1,
+								)?;
+								T::NFT::transfer(&auction.token0.0, &auction.token0.1, &winner)?;
 
-						auction.winner = Some(winner);
-						final_amount = Some(winner_amount1);
+								auction.winner = Some(winner);
+								final_amount = Some(winner_amount1);
+							}
+						}
+
+						Self::deposit_event(Event::AuctionEnd(
+							auction_id,
+							auction.winner.clone(),
+							final_amount,
+						));
 					}
 
-					Self::deposit_event(Event::AuctionEnd(
-						auction_id,
-						auction.winner.clone(),
-						final_amount,
-					));
 					Ok(())
 				})?;
 			}

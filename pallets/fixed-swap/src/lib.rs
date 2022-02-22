@@ -72,7 +72,8 @@ pub mod pallet {
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
-	pub struct Pallet<T>(_);
+	#[pallet::without_storage_info]
+	pub struct Pallet<T>(PhantomData<T>);
 
 	/// Next id of a pool
 	#[pallet::storage]
@@ -87,7 +88,6 @@ pub mod pallet {
 		Blake2_128Concat,
 		T::PoolId,
 		PoolDetails<T::AccountId, T::Balance, T::BlockNumber, T::TokenId>,
-		ValueQuery,
 	>;
 
 	/// Swap records by a pool and an account.
@@ -183,24 +183,26 @@ pub mod pallet {
 			let buyer = ensure_signed(origin)?;
 
 			Pool::<T>::try_mutate(pool_id, |pool| -> DispatchResult {
-				let now = frame_system::Pallet::<T>::block_number();
-				ensure!(now < pool.start_at.saturating_add(pool.duration), Error::<T>::PoolExpired);
+				if let Some(pool) = pool {
+					let now = frame_system::Pallet::<T>::block_number();
+					ensure!(now < pool.start_at.saturating_add(pool.duration), Error::<T>::PoolExpired);
 
-				let amount0: T::Balance = amount1.saturating_mul(pool.total0) / pool.total1;
-				pool.swapped0 = pool.swapped0.saturating_add(amount0);
-				pool.swapped1 = pool.swapped1.saturating_add(amount1);
+					let amount0: T::Balance = amount1.saturating_mul(pool.total0) / pool.total1;
+					pool.swapped0 = pool.swapped0.saturating_add(amount0);
+					pool.swapped1 = pool.swapped1.saturating_add(amount1);
 
-				T::Currency::unreserve(pool.token0, &pool.creator, amount0);
-				T::Currency::transfer(pool.token0, &pool.creator, &buyer, amount0)?;
-				T::Currency::transfer(pool.token1, &buyer, &pool.creator, amount1)?;
+					T::Currency::unreserve(pool.token0, &pool.creator, amount0);
+					T::Currency::transfer(pool.token0, &pool.creator, &buyer, amount0)?;
+					T::Currency::transfer(pool.token1, &buyer, &pool.creator, amount1)?;
 
-				Swap::<T>::try_mutate(pool_id, &buyer, |swap| -> DispatchResult {
-					swap.0 = swap.0.saturating_add(amount0);
-					swap.1 = swap.1.saturating_add(amount1);
-					Ok(())
-				})?;
+					Swap::<T>::try_mutate(pool_id, &buyer, |swap| -> DispatchResult {
+						swap.0 = swap.0.saturating_add(amount0);
+						swap.1 = swap.1.saturating_add(amount1);
+						Ok(())
+					})?;
 
-				Self::deposit_event(Event::PoolSwapped(pool_id, buyer));
+					Self::deposit_event(Event::PoolSwapped(pool_id, buyer));
+				}
 				Ok(())
 			})?;
 
@@ -218,12 +220,13 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		fn on_finalize(now: T::BlockNumber) {
 			for (pool_id, _) in PoolEndAt::<T>::drain_prefix(&now) {
-				let pool = Pool::<T>::get(pool_id);
-				let un_swapped0 = pool.total0.saturating_sub(pool.swapped0);
-				if un_swapped0 > Zero::zero() {
-					T::Currency::unreserve(pool.token0, &pool.creator, un_swapped0);
+				if let Some(pool) = Pool::<T>::get(pool_id) {
+					let un_swapped0 = pool.total0.saturating_sub(pool.swapped0);
+					if un_swapped0 > Zero::zero() {
+						T::Currency::unreserve(pool.token0, &pool.creator, un_swapped0);
+					}
+					Self::deposit_event(Event::PoolClosed(pool_id));
 				}
-				Self::deposit_event(Event::PoolClosed(pool_id));
 			}
 		}
 	}
