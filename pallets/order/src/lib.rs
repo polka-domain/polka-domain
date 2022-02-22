@@ -19,9 +19,10 @@
 
 use codec::{Decode, Encode};
 use frame_support::RuntimeDebug;
+use frame_support::traits::tokens::nonfungibles::Transfer as TransferNFT;
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
 pub use pallet::*;
-use primitives::{CurrencyId, NFT};
+use primitives::{CurrencyId, ReserveNFT};
 use scale_info::TypeInfo;
 use sp_runtime::traits::{AtLeast32BitUnsigned, One, Saturating};
 use sp_std::prelude::*;
@@ -81,16 +82,13 @@ pub mod pallet {
 		type TokenData: Parameter + Member + MaybeSerializeDeserialize;
 
 		/// The NFT mechanism
-		type NFT: NFT<
-			Self::AccountId,
-			ClassId = Self::ClassId,
-			TokenId = Self::TokenId,
-			Balance = Self::Balance,
-		>;
+		type NFT: TransferNFT<Self::AccountId, ClassId = Self::ClassId, InstanceId = Self::TokenId>
+			+ ReserveNFT<Self::AccountId, ClassId = Self::ClassId, TokenId = Self::TokenId>;
 	}
 
 	#[pallet::pallet]
-	#[pallet::generate_store(pub(super) trait Store)]
+	// #[pallet::generate_store(pub(super) trait Store)]
+	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
 
 	/// Next id of an order
@@ -106,7 +104,7 @@ pub mod pallet {
 		Blake2_128Concat,
 		T::OrderId,
 		PoolDetails<T::AccountId, T::Balance, T::ClassId, T::TokenId>,
-		ValueQuery,
+		OptionQuery,
 	>;
 
 	#[pallet::event]
@@ -150,14 +148,15 @@ pub mod pallet {
 		#[pallet::weight(1000)]
 		pub fn cancel_order(origin: OriginFor<T>, order_id: T::OrderId) -> DispatchResult {
 			let maker = ensure_signed(origin)?;
-			let order = Order::<T>::get(order_id);
-			ensure!(maker == order.maker, Error::<T>::InvalidCreator);
+			if let Some(order) = Order::<T>::get(order_id) {
+				ensure!(maker == order.maker, Error::<T>::InvalidCreator);
 
-			T::NFT::unreserve(&order.maker, order.token0)?;
+				T::NFT::unreserve(&order.maker, order.token0)?;
 
-			Order::<T>::remove(order_id);
+				Order::<T>::remove(order_id);
 
-			Self::deposit_event(Event::OrderCancelled(order_id));
+				Self::deposit_event(Event::OrderCancelled(order_id));
+			}
 
 			Ok(())
 		}
@@ -171,12 +170,14 @@ pub mod pallet {
 			let taker = ensure_signed(origin)?;
 
 			Order::<T>::try_mutate(order_id, |order| -> DispatchResult {
-				T::NFT::unreserve(&order.maker, order.token0)?;
-				T::NFT::transfer(&order.maker, &taker, order.token0)?;
-				T::Currency::transfer(order.token1, &taker, &order.maker, amount1)?;
-				order.taker = Some(taker.clone());
+				if let Some(order) = order {
+					T::NFT::unreserve(&order.maker, order.token0)?;
+					T::NFT::transfer(&order.token0.0, &order.token0.1, &taker)?;
+					T::Currency::transfer(order.token1, &taker, &order.maker, amount1)?;
+					order.taker = Some(taker.clone());
 
-				Self::deposit_event(Event::OrderSwapped(order_id, taker, amount1));
+					Self::deposit_event(Event::OrderSwapped(order_id, taker, amount1));
+				}
 				Ok(())
 			})?;
 

@@ -26,7 +26,7 @@ pub mod nft;
 use core::ops::Range;
 
 pub use currency::{CurrencyId, TokenSymbol};
-pub use nft::NFT;
+pub use nft::ReserveNFT;
 use scale_info::TypeInfo;
 use sp_runtime::{
 	generic,

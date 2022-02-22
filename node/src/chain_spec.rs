@@ -29,6 +29,9 @@ use sp_runtime::traits::{IdentifyAccount, Verify};
 /// Specialized `ChainSpec` for the normal parachain runtime.
 pub type ChainSpec = sc_service::GenericChainSpec<parachain_runtime::GenesisConfig, Extensions>;
 
+/// The default XCM version to set in genesis config.
+const SAFE_XCM_VERSION: u32 = xcm::prelude::XCM_VERSION;
+
 /// Helper function to generate a crypto pair from seed
 pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
 	TPublic::Pair::from_string(&format!("//{}", seed), None)
@@ -86,6 +89,7 @@ pub fn development_config() -> ChainSpec {
 		vec![],
 		None,
 		None,
+		None,
 		Some(properties),
 		Extensions { relay_chain: "rococo-dev".into(), para_id: 3000 },
 	)
@@ -114,6 +118,7 @@ pub fn local_testnet_config() -> ChainSpec {
 			)
 		},
 		vec![],
+		None,
 		None,
 		None,
 		Some(properties),
@@ -154,6 +159,7 @@ pub fn genesis_config() -> ChainSpec {
 		vec![],
 		None,
 		None,
+		None,
 		Some(properties),
 		Extensions { relay_chain: "rococo".into(), para_id: 3000 },
 	)
@@ -174,11 +180,14 @@ fn genesis(
 		balances: parachain_runtime::BalancesConfig {
 			balances: endowed_accounts.iter().cloned().map(|k| (k, 1 << 60)).collect(),
 		},
-		sudo: parachain_runtime::SudoConfig { key: root_key },
+		sudo: parachain_runtime::SudoConfig { key: Some(root_key) },
 		parachain_info: parachain_runtime::ParachainInfoConfig { parachain_id: id },
 		aura: parachain_runtime::AuraConfig { authorities: initial_authorities },
 		aura_ext: Default::default(),
 		parachain_system: Default::default(),
+		polkadot_xcm: parachain_runtime::PolkadotXcmConfig {
+			safe_xcm_version: Some(SAFE_XCM_VERSION),
+		},
 		orml_nft: Default::default(),
 		tokens: TokensConfig {
 			balances: endowed_accounts
