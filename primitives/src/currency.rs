@@ -27,7 +27,7 @@ use sp_std::{
 	prelude::*,
 };
 
-use crate::{evm::EvmAddress, *};
+use crate::*;
 
 macro_rules! create_currency_id {
     ($(#[$meta:meta])*
@@ -114,19 +114,15 @@ macro_rules! create_currency_id {
 			#[derive(Serialize, Deserialize)]
 			struct Token {
 				symbol: String,
-				address: EvmAddress,
 			}
 
 			let mut tokens = vec![
 				$(
 					Token {
 						symbol: stringify!($symbol).to_string(),
-						address: EvmAddress::try_from(CurrencyId::Token(TokenSymbol::$symbol)).unwrap(),
 					},
 				)*
 			];
-
-			frame_support::assert_ok!(std::fs::write("../predeploy-contracts/resources/tokens.json", serde_json::to_string_pretty(&tokens).unwrap()));
 		}
     }
 }
@@ -181,7 +177,6 @@ pub trait TokenInfo {
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub enum DexShare {
 	Token(TokenSymbol),
-	Erc20(EvmAddress),
 }
 
 #[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, RuntimeDebug, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
@@ -189,8 +184,6 @@ pub enum DexShare {
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub enum CurrencyId {
 	Token(TokenSymbol),
-	DexShare(DexShare, DexShare),
-	Erc20(EvmAddress),
 }
 
 impl Default for CurrencyId {
@@ -202,94 +195,5 @@ impl Default for CurrencyId {
 impl CurrencyId {
 	pub fn is_token_currency_id(&self) -> bool {
 		matches!(self, CurrencyId::Token(_))
-	}
-
-	pub fn is_dex_share_currency_id(&self) -> bool {
-		matches!(self, CurrencyId::DexShare(_, _))
-	}
-
-	pub fn is_erc20_currency_id(&self) -> bool {
-		matches!(self, CurrencyId::Erc20(_))
-	}
-
-	pub fn split_dex_share_currency_id(&self) -> Option<(Self, Self)> {
-		match self {
-			CurrencyId::DexShare(dex_share_0, dex_share_1) => {
-				let currency_id_0: CurrencyId = (*dex_share_0).into();
-				let currency_id_1: CurrencyId = (*dex_share_1).into();
-				Some((currency_id_0, currency_id_1))
-			},
-			_ => None,
-		}
-	}
-
-	pub fn join_dex_share_currency_id(currency_id_0: Self, currency_id_1: Self) -> Option<Self> {
-		let dex_share_0 = match currency_id_0 {
-			CurrencyId::Token(symbol) => DexShare::Token(symbol),
-			CurrencyId::Erc20(address) => DexShare::Erc20(address),
-			_ => return None,
-		};
-		let dex_share_1 = match currency_id_1 {
-			CurrencyId::Token(symbol) => DexShare::Token(symbol),
-			CurrencyId::Erc20(address) => DexShare::Erc20(address),
-			_ => return None,
-		};
-		Some(CurrencyId::DexShare(dex_share_0, dex_share_1))
-	}
-}
-
-impl From<DexShare> for u32 {
-	fn from(val: DexShare) -> u32 {
-		let mut bytes = [0u8; 4];
-		match val {
-			DexShare::Token(token) => {
-				bytes[3] = token.into();
-			},
-			DexShare::Erc20(address) => {
-				let is_zero = |&&d: &&u8| -> bool { d == 0 };
-				let leading_zeros = address.as_bytes().iter().take_while(is_zero).count();
-				let index = if leading_zeros > 16 { 16 } else { leading_zeros };
-				bytes[..].copy_from_slice(&address[index..index + 4][..]);
-			},
-		}
-		u32::from_be_bytes(bytes)
-	}
-}
-
-/// Generate the EvmAddress from CurrencyId so that evm contracts can call the erc20 contract.
-impl TryFrom<CurrencyId> for EvmAddress {
-	type Error = ();
-
-	fn try_from(val: CurrencyId) -> Result<Self, Self::Error> {
-		match val {
-			CurrencyId::Token(_) => Ok(EvmAddress::from_low_u64_be(
-				MIRRORED_TOKENS_ADDRESS_START | u64::from(val.currency_id().unwrap()),
-			)),
-			CurrencyId::DexShare(token_symbol_0, token_symbol_1) => {
-				let symbol_0 = match token_symbol_0 {
-					DexShare::Token(token) => CurrencyId::Token(token).currency_id().ok_or(()),
-					DexShare::Erc20(_) => Err(()),
-				}?;
-				let symbol_1 = match token_symbol_1 {
-					DexShare::Token(token) => CurrencyId::Token(token).currency_id().ok_or(()),
-					DexShare::Erc20(_) => Err(()),
-				}?;
-
-				let mut prefix = EvmAddress::default();
-				prefix[0..H160_PREFIX_DEXSHARE.len()].copy_from_slice(&H160_PREFIX_DEXSHARE);
-				Ok(prefix |
-					EvmAddress::from_low_u64_be(u64::from(symbol_0) << 32 | u64::from(symbol_1)))
-			},
-			CurrencyId::Erc20(address) => Ok(address),
-		}
-	}
-}
-
-impl Into<CurrencyId> for DexShare {
-	fn into(self) -> CurrencyId {
-		match self {
-			DexShare::Token(token) => CurrencyId::Token(token),
-			DexShare::Erc20(address) => CurrencyId::Erc20(address),
-		}
 	}
 }
