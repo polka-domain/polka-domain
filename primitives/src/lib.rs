@@ -22,8 +22,6 @@
 pub mod currency;
 pub mod nft;
 
-use core::ops::Range;
-
 pub use currency::{CurrencyId, TokenSymbol};
 pub use nft::ReserveNFT;
 use scale_info::TypeInfo;
@@ -87,6 +85,9 @@ pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 
 /// Block ID.
 pub type BlockId = generic::BlockId<Block>;
+
+// Id used for identifying assets.
+pub type AssetId = u32;
 
 use codec::{Decode, Encode, MaxEncodedLen};
 /// Opaque, encoded, unchecked extrinsic.

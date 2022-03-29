@@ -28,26 +28,26 @@ use codec::{Decode, Encode};
 
 pub use frame_support::{
 	construct_runtime, match_type, parameter_types,
-	traits::{Contains, Everything, Get, IsInVec, Nothing, Randomness},
+	traits::{EnsureOneOf, Contains, Everything, Get, IsInVec, Nothing, Randomness},
 	weights::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
 		DispatchClass, IdentityFee, Weight,
 	},
 	PalletId, StorageValue,
 };
-use frame_system::limits::{BlockLength, BlockWeights};
+use frame_system::{EnsureRoot, limits::{BlockLength, BlockWeights}};
 pub use nft::Call as NFTCall;
 use orml_traits::parameter_type_with_key;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_timestamp::Call as TimestampCall;
-use pallet_xcm::XcmPassthrough;
+use pallet_xcm::{EnsureXcm, IsMajorityOfBody, XcmPassthrough};
 // XCM imports
 pub use cumulus_primitives_core::ParaId;
 use orml_currencies::BasicCurrencyAdapter;
 use orml_traits::MultiCurrency;
 pub use orml_xcm_support::{DepositToAlternative, IsNativeConcrete, MultiCurrencyAdapter, MultiNativeAsset};
 use polkadot_parachain::primitives::Sibling;
-pub use primitives::{Amount, AuctionId, CurrencyId, ReserveIdentifier, TokenSymbol};
+pub use primitives::{Amount, AuctionId, AssetId, CurrencyId, ReserveIdentifier, TokenSymbol};
 use sp_api::impl_runtime_apis;
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::OpaqueMetadata;
@@ -75,7 +75,7 @@ use xcm_builder::{
 };
 use xcm_executor::XcmExecutor;
 
-pub use constants::{fee::*, time::*};
+pub use constants::{currency, currency::*, fee::*};
 pub mod constants;
 
 impl_opaque_keys! {
@@ -271,7 +271,7 @@ impl cumulus_pallet_aura_ext::Config for Runtime {}
 impl pallet_randomness_collective_flip::Config for Runtime {}
 
 parameter_types! {
-	pub const RocLocation: MultiLocation = MultiLocation::parent();
+	pub const KsmLocation: MultiLocation = MultiLocation::parent();
 	pub const RococoNetwork: NetworkId = NetworkId::Polkadot;
 	pub RelayChainOrigin: Origin = cumulus_pallet_xcm::Origin::Relay.into();
 	pub Ancestry: MultiLocation = Parachain(ParachainInfo::parachain_id().into()).into();
@@ -398,7 +398,7 @@ pub type XcmOriginToCallOrigin = (
 
 parameter_types! {
 	// One XCM operation is 200_000_000 weight, cross-chain transfer ~= 2x of transfer.
-	pub KsmPerSecond: (AssetId, u128) = (MultiLocation::parent().into(), ksm_per_second());
+	pub KsmPerSecond: (xcm::latest::prelude::AssetId, u128) = (MultiLocation::parent().into(), ksm_per_second());
 }
 
 pub type Trader = (FixedRateOfFungible<KsmPerSecond, ToTreasury>,);
@@ -418,7 +418,7 @@ impl xcm_executor::Config for XcmConfig {
 	type LocationInverter = LocationInverter<Ancestry>;
 	type OriginConverter = XcmOriginToTransactDispatchOrigin;
 	type ResponseHandler = PolkadotXcm;
-	type Trader = UsingComponents<IdentityFee<Balance>, RocLocation, AccountId, Balances, ()>;
+	type Trader = UsingComponents<IdentityFee<Balance>, KsmLocation, AccountId, Balances, ()>;
 	type Weigher = FixedWeightBounds<UnitWeightCost, Call, MaxInstructions>;
 	type XcmSender = XcmRouter;
 	type SubscriptionService = PolkadotXcm;
@@ -465,14 +465,14 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
 	type Event = Event;
 	type XcmExecutor = XcmExecutor<XcmConfig>;
 	type VersionWrapper = PolkadotXcm;
-	type ExecuteOverweightOrigin = frame_system::EnsureRoot<AccountId>;
-	type ControllerOrigin = frame_system::EnsureRoot<AccountId>;
+	type ExecuteOverweightOrigin = EnsureRoot<AccountId>;
+	type ControllerOrigin = EnsureRoot<AccountId>;
 	type ControllerOriginConverter = XcmOriginToTransactDispatchOrigin;
 }
 
 impl cumulus_pallet_dmp_queue::Config for Runtime {
 	type Event = Event;
-	type ExecuteOverweightOrigin = frame_system::EnsureRoot<AccountId>;
+	type ExecuteOverweightOrigin = EnsureRoot<AccountId>;
 	type XcmExecutor = XcmExecutor<XcmConfig>;
 }
 
@@ -761,6 +761,67 @@ impl orml_unknown_tokens::Config for Runtime {
 	type Event = Event;
 }
 
+parameter_types! {
+	pub const AssetDeposit: Balance = UNITS; // 1 UNIT deposit to create asset
+	pub const AssetAccountDeposit: Balance = currency::deposit(1, 16);
+	pub const ApprovalDeposit: Balance = EXISTENTIAL_DEPOSIT;
+	pub const AssetsStringLimit: u32 = 50;
+	/// Key = 32 bytes, Value = 36 bytes (32+1+1+1+1)
+	// https://github.com/paritytech/substrate/blob/069917b/frame/assets/src/lib.rs#L257L271
+	pub const MetadataDepositBase: Balance = currency::deposit(1, 68);
+	pub const MetadataDepositPerByte: Balance = currency::deposit(0, 1);
+	pub const ExecutiveBody: BodyId = BodyId::Executive;
+}
+
+/// We allow root and the Relay Chain council to execute privileged asset operations.
+pub type AssetsForceOrigin =
+	EnsureOneOf<EnsureRoot<AccountId>, EnsureXcm<IsMajorityOfBody<KsmLocation, ExecutiveBody>>>;
+
+impl pallet_assets::Config for Runtime {
+	type Event = Event;
+	type Balance = Balance;
+	type AssetId = AssetId;
+	type Currency = Balances;
+	type ForceOrigin = AssetsForceOrigin;
+	type AssetDeposit = AssetDeposit;
+	type MetadataDepositBase = MetadataDepositBase;
+	type MetadataDepositPerByte = MetadataDepositPerByte;
+	type ApprovalDeposit = ApprovalDeposit;
+	type StringLimit = AssetsStringLimit;
+	type Freezer = ();
+	type Extra = ();
+	type WeightInfo = pallet_assets::weights::SubstrateWeight<Runtime>;
+	type AssetAccountDeposit = AssetAccountDeposit;
+}
+
+parameter_types! {
+	pub const ClassDeposit: Balance = UNITS; // 1 UNIT deposit to create asset class
+	pub const InstanceDeposit: Balance = UNITS / 100; // 1/100 UNIT deposit to create asset instance
+	pub const KeyLimit: u32 = 32;	// Max 32 bytes per key
+	pub const ValueLimit: u32 = 64;	// Max 64 bytes per value
+	pub const UniquesMetadataDepositBase: Balance = currency::deposit(1, 129);
+	pub const AttributeDepositBase: Balance = currency::deposit(1, 0);
+	pub const DepositPerByte: Balance = currency::deposit(0, 1);
+	pub const UniquesStringLimit: u32 = 128;
+}
+
+impl pallet_uniques::Config for Runtime {
+	type Event = Event;
+	type ClassId = u32;
+	type InstanceId = u32;
+	type Currency = Balances;
+	type ForceOrigin = AssetsForceOrigin;
+	type ClassDeposit = ClassDeposit;
+	type InstanceDeposit = InstanceDeposit;
+	type MetadataDepositBase = UniquesMetadataDepositBase;
+	type AttributeDepositBase = AttributeDepositBase;
+	type DepositPerByte = DepositPerByte;
+	type StringLimit = UniquesStringLimit;
+	type KeyLimit = KeyLimit;
+	type ValueLimit = ValueLimit;
+	type WeightInfo = pallet_uniques::weights::SubstrateWeight<Runtime>;
+}
+
 construct_runtime! {
 	pub enum Runtime where
 		Block = Block,
@@ -805,6 +866,9 @@ construct_runtime! {
 		Auction: auction::{Pallet, Call, Storage, Event<T>},
 
 		Spambot: cumulus_ping::{Pallet, Call, Storage, Event<T>},
+
+		Assets: pallet_assets::{Pallet, Call, Storage, Event<T>},
+		Uniques: pallet_uniques::{Pallet, Call, Storage, Event<T>},
 	}
 }
 
