@@ -15,26 +15,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! A set of constant values used in dev runtime.
+pub mod currency {
+	use primitives::Balance;
 
-/// Time and blocks.
-pub mod time {
-	// use primitives::{Balance, BlockNumber, Moment};
-	// use runtime_common::{dollar, millicent, KAR};
+	/// The existential deposit.
+	pub const EXISTENTIAL_DEPOSIT: Balance = 1 * CENTS;
 
-	// pub const SECS_PER_BLOCK: Moment = 12;
-	// pub const MILLISECS_PER_BLOCK: Moment = SECS_PER_BLOCK * 1000;
+	pub const UNITS: Balance = 1_000_000_000_000;
+	pub const CENTS: Balance = UNITS / 100;
+	pub const MILLICENTS: Balance = CENTS / 1_000;
 
-	// // These time units are defined in number of blocks.
-	// pub const MINUTES: BlockNumber = 60 / (SECS_PER_BLOCK as BlockNumber);
-	// pub const HOURS: BlockNumber = MINUTES * 60;
-	// pub const DAYS: BlockNumber = HOURS * 24;
-
-	// pub const SLOT_DURATION: Moment = MILLISECS_PER_BLOCK;
-
-	// pub fn deposit(items: u32, bytes: u32) -> Balance {
-	// 	items as Balance * 2 * dollar(KAR) + (bytes as Balance) * 30 * millicent(KAR)
-	// }
+	pub const fn deposit(items: u32, bytes: u32) -> Balance {
+		items as Balance * 2_000 * CENTS + (bytes as Balance) * 100 * MILLICENTS
+	}
 }
 
 /// Fee-related
