@@ -147,11 +147,7 @@ macro_rules! construct_async_run {
 	(|$components:ident, $cli:ident, $cmd:ident, $config:ident| $( $code:tt )* ) => {{
 		let runner = $cli.create_runner($cmd)?;
 		runner.async_run(|$config| {
-			let $components = new_partial::<
-				parachain_runtime::RuntimeApi,
-				ParachainRuntimeExecutor,
-				_
-			>(
+			let $components = new_partial::<parachain_runtime::RuntimeApi, _>(
 				&$config,
 				crate::service::parachain_build_import_queue,
 			)?;
@@ -287,6 +283,7 @@ pub fn run() -> Result<()> {
 		Some(Subcommand::Key(cmd)) => Ok(cmd.run(&cli)?),
 		None => {
 			let runner = cli.create_runner(&cli.run.normalize())?;
+			let collator_options = cli.run.collator_options();
 
 			runner.run_node_until_exit(|config| async move {
 				let para_id = chain_spec::Extensions::try_get(&*config.chain_spec)
@@ -323,10 +320,12 @@ pub fn run() -> Result<()> {
 				info!("Parachain Account: {}", parachain_account);
 				info!("Parachain genesis state: {}", genesis_state);
 				info!("Is collating: {}", if config.role.is_authority() { "yes" } else { "no" });
-				crate::service::start_parachain_node(config, polkadot_config, id)
-					.await
-					.map(|r| r.0)
-					.map_err(Into::into)
+				crate::service::start_parachain_node(
+					config, polkadot_config, collator_options, id
+				)
+				.await
+				.map(|r| r.0)
+				.map_err(Into::into)
 			})
 		},
 	}
