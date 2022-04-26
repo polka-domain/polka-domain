@@ -80,11 +80,11 @@ codegen-units = 1
 
 [patch.crates-io]
 # ORML dependencies
-orml-currencies = { git = "https://github.com/open-web3-stack/open-runtime-module-library", rev = "2b5d4ce1d08fb54c0007c2055653892d2c93a92e" }
-orml-tokens = { git = "https://github.com/open-web3-stack/open-runtime-module-library", rev = "2b5d4ce1d08fb54c0007c2055653892d2c93a92e" }
-orml-traits = { git = "https://github.com/open-web3-stack/open-runtime-module-library", rev = "2b5d4ce1d08fb54c0007c2055653892d2c93a92e" }
-orml-nft = { git = "https://github.com/open-web3-stack/open-runtime-module-library", rev = "2b5d4ce1d08fb54c0007c2055653892d2c93a92e" }
-orml-xtokens = { git = "https://github.com/open-web3-stack/open-runtime-module-library", rev = "2b5d4ce1d08fb54c0007c2055653892d2c93a92e" }
-orml-unknown-tokens = { git = "https://github.com/open-web3-stack/open-runtime-module-library", rev = "2b5d4ce1d08fb54c0007c2055653892d2c93a92e" }
-orml-xcm-support = { git = "https://github.com/open-web3-stack/open-runtime-module-library", rev = "2b5d4ce1d08fb54c0007c2055653892d2c93a92e" }
+orml-currencies = { git = "https://github.com/open-web3-stack/open-runtime-module-library", rev = "d42fdd6b64fbe4d234accd5d6bd862f27b97e767" }
+orml-tokens = { git = "https://github.com/open-web3-stack/open-runtime-module-library", rev = "d42fdd6b64fbe4d234accd5d6bd862f27b97e767" }
+orml-traits = { git = "https://github.com/open-web3-stack/open-runtime-module-library", rev = "d42fdd6b64fbe4d234accd5d6bd862f27b97e767" }
+orml-nft = { git = "https://github.com/open-web3-stack/open-runtime-module-library", rev = "d42fdd6b64fbe4d234accd5d6bd862f27b97e767" }
+orml-xtokens = { git = "https://github.com/open-web3-stack/open-runtime-module-library", rev = "d42fdd6b64fbe4d234accd5d6bd862f27b97e767" }
+orml-unknown-tokens = { git = "https://github.com/open-web3-stack/open-runtime-module-library", rev = "d42fdd6b64fbe4d234accd5d6bd862f27b97e767" }
+orml-xcm-support = { git = "https://github.com/open-web3-stack/open-runtime-module-library", rev = "d42fdd6b64fbe4d234accd5d6bd862f27b97e767" }
 

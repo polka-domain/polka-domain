@@ -24,7 +24,10 @@ use frame_support::{
 	weights::GetDispatchInfo,
 };
 pub use pallet::*;
-pub use primitives::{AccountIndex, nft::{ClassProperty, Properties}};
+pub use primitives::{
+	nft::{ClassProperty, Properties},
+	AccountIndex,
+};
 use scale_info::TypeInfo;
 use sp_runtime::{
 	traits::{AccountIdConversion, Dispatchable, Saturating, StaticLookup, Zero},

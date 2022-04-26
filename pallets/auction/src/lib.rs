@@ -18,8 +18,9 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::{Decode, Encode};
-use frame_support::{transactional, RuntimeDebug};
-use frame_support::traits::tokens::nonfungibles::Transfer as TransferNFT;
+use frame_support::{
+	traits::tokens::nonfungibles::Transfer as TransferNFT, transactional, RuntimeDebug,
+};
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
 pub use pallet::*;
 use primitives::{CurrencyId, ReserveNFT};
@@ -87,7 +88,7 @@ pub mod pallet {
 
 		/// The NFT mechanism
 		type NFT: TransferNFT<Self::AccountId, ClassId = Self::ClassId, InstanceId = Self::TokenId>
-		+ ReserveNFT<Self::AccountId, ClassId = Self::ClassId, TokenId = Self::TokenId>;
+			+ ReserveNFT<Self::AccountId, ClassId = Self::ClassId, TokenId = Self::TokenId>;
 
 		/// Max auction allow to create in each block
 		type MaxAuction: Get<MaxAuction>;
@@ -222,7 +223,8 @@ pub mod pallet {
 				);
 
 				if AuctionWinner::<T>::contains_key(auction_id) {
-					let (maybe_winner, maybe_winner_amount1) = AuctionWinner::<T>::get(auction_id).unwrap();
+					let (maybe_winner, maybe_winner_amount1) =
+						AuctionWinner::<T>::get(auction_id).unwrap();
 					ensure!(amount1 > maybe_winner_amount1, Error::<T>::InvalidBidAmount);
 					T::Currency::unreserve(auction.token1, &maybe_winner, maybe_winner_amount1);
 				}
@@ -272,7 +274,9 @@ pub mod pallet {
 
 						let mut final_amount = None;
 						if AuctionWinner::<T>::contains_key(auction_id) {
-							if let Some((winner, winner_amount1)) = AuctionWinner::<T>::get(auction_id) {
+							if let Some((winner, winner_amount1)) =
+								AuctionWinner::<T>::get(auction_id)
+							{
 								T::Currency::unreserve(auction.token1, &winner, winner_amount1);
 								T::Currency::transfer(
 									auction.token1,

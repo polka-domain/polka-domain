@@ -22,8 +22,8 @@ use scale_info::{build::Fields, meta_type, Path, Type, TypeInfo, TypeParameter};
 use serde::{Deserialize, Serialize};
 
 use frame_support::RuntimeDebug;
-use sp_std::{collections::btree_map::BTreeMap, prelude::*};
 use sp_runtime::DispatchResult;
+use sp_std::{collections::btree_map::BTreeMap, prelude::*};
 
 pub type NFTBalance = u128;
 pub type CID = Vec<u8>;
@@ -55,9 +55,7 @@ impl Encode for Properties {
 impl Decode for Properties {
 	fn decode<I: codec::Input>(input: &mut I) -> sp_std::result::Result<Self, codec::Error> {
 		let field = u8::decode(input)?;
-		Ok(Self(
-			<BitFlags<ClassProperty>>::from_bits(field as u8).map_err(|_| "invalid value")?,
-		))
+		Ok(Self(<BitFlags<ClassProperty>>::from_bits(field as u8).map_err(|_| "invalid value")?))
 	}
 }
 
@@ -71,7 +69,6 @@ impl TypeInfo for Properties {
 			.composite(Fields::unnamed().field(|f| f.ty::<u8>().type_name("ClassProperty")))
 	}
 }
-
 
 /// Abstraction over a non-fungible token system.
 pub trait ReserveNFT<AccountId> {

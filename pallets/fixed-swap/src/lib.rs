@@ -185,7 +185,10 @@ pub mod pallet {
 			Pool::<T>::try_mutate(pool_id, |pool| -> DispatchResult {
 				if let Some(pool) = pool {
 					let now = frame_system::Pallet::<T>::block_number();
-					ensure!(now < pool.start_at.saturating_add(pool.duration), Error::<T>::PoolExpired);
+					ensure!(
+						now < pool.start_at.saturating_add(pool.duration),
+						Error::<T>::PoolExpired
+					);
 
 					let amount0: T::Balance = amount1.saturating_mul(pool.total0) / pool.total1;
 					pool.swapped0 = pool.swapped0.saturating_add(amount0);
