@@ -25,10 +25,10 @@ use cumulus_client_service::{
 	prepare_node_config, start_collator, start_full_node, StartCollatorParams, StartFullNodeParams,
 };
 use cumulus_primitives_core::ParaId;
-use polka_domain_primitives::{AccountId, Balance, Block, Hash, Nonce};
 use cumulus_relay_chain_inprocess_interface::build_inprocess_relay_chain;
 use cumulus_relay_chain_interface::{RelayChainError, RelayChainInterface, RelayChainResult};
 use cumulus_relay_chain_rpc_interface::RelayChainRPCInterface;
+use polka_domain_primitives::{AccountId, Balance, Block, Hash, Nonce};
 use polkadot_service::CollatorPair;
 use sc_executor::WasmExecutor;
 use sc_network::NetworkService;
@@ -397,9 +397,7 @@ where
 
 /// Build the import queue for the polkad-domain parachain runtime.
 pub fn parachain_build_import_queue(
-	client: Arc<
-		TFullClient<Block, parachain_runtime::RuntimeApi, WasmExecutor<HostFunctions>>,
-	>,
+	client: Arc<TFullClient<Block, parachain_runtime::RuntimeApi, WasmExecutor<HostFunctions>>>,
 	config: &Configuration,
 	telemetry: Option<TelemetryHandle>,
 	task_manager: &TaskManager,

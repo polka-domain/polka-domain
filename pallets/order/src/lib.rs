@@ -18,8 +18,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::{Decode, Encode};
-use frame_support::RuntimeDebug;
-use frame_support::traits::tokens::nonfungibles::Transfer as TransferNFT;
+use frame_support::{traits::tokens::nonfungibles::Transfer as TransferNFT, RuntimeDebug};
 use orml_traits::{MultiCurrency, MultiReservableCurrency};
 pub use pallet::*;
 use primitives::{CurrencyId, ReserveNFT};
