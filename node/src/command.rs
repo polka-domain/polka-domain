@@ -288,6 +288,9 @@ pub fn run() -> Result<()> {
 					cmd.run(config, partials.client.clone(), db, storage)
 				}),
 				BenchmarkCmd::Overhead(_) => Err("Unsupported benchmarking command".into()),
+				BenchmarkCmd::Machine(cmd) => {
+					return runner.sync_run(|config| cmd.run(&config));
+				}
 			}
 		},
 		Some(Subcommand::TryRuntime(cmd)) => {
