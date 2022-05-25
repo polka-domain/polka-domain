@@ -80,11 +80,11 @@ codegen-units = 1
 
 [patch.crates-io]
 # ORML dependencies
-orml-currencies = { git = "https://github.com/open-web3-stack/open-runtime-module-library", rev = "920c5a6e11f76378d8aeb5b3551a834bc4ecb9c8" }
-orml-tokens = { git = "https://github.com/open-web3-stack/open-runtime-module-library", rev = "920c5a6e11f76378d8aeb5b3551a834bc4ecb9c8" }
-orml-traits = { git = "https://github.com/open-web3-stack/open-runtime-module-library", rev = "920c5a6e11f76378d8aeb5b3551a834bc4ecb9c8" }
-orml-nft = { git = "https://github.com/open-web3-stack/open-runtime-module-library", rev = "920c5a6e11f76378d8aeb5b3551a834bc4ecb9c8" }
-orml-xtokens = { git = "https://github.com/open-web3-stack/open-runtime-module-library", rev = "920c5a6e11f76378d8aeb5b3551a834bc4ecb9c8" }
-orml-unknown-tokens = { git = "https://github.com/open-web3-stack/open-runtime-module-library", rev = "920c5a6e11f76378d8aeb5b3551a834bc4ecb9c8" }
-orml-xcm-support = { git = "https://github.com/open-web3-stack/open-runtime-module-library", rev = "920c5a6e11f76378d8aeb5b3551a834bc4ecb9c8" }
+orml-currencies = { git = "https://github.com/open-web3-stack/open-runtime-module-library", rev = "f709ed62262435b3ad80482d309e3575625d1e5b" }
+orml-tokens = { git = "https://github.com/open-web3-stack/open-runtime-module-library", rev = "f709ed62262435b3ad80482d309e3575625d1e5b" }
+orml-traits = { git = "https://github.com/open-web3-stack/open-runtime-module-library", rev = "f709ed62262435b3ad80482d309e3575625d1e5b" }
+orml-nft = { git = "https://github.com/open-web3-stack/open-runtime-module-library", rev = "f709ed62262435b3ad80482d309e3575625d1e5b" }
+orml-xtokens = { git = "https://github.com/open-web3-stack/open-runtime-module-library", rev = "f709ed62262435b3ad80482d309e3575625d1e5b" }
+orml-unknown-tokens = { git = "https://github.com/open-web3-stack/open-runtime-module-library", rev = "f709ed62262435b3ad80482d309e3575625d1e5b" }
+orml-xcm-support = { git = "https://github.com/open-web3-stack/open-runtime-module-library", rev = "f709ed62262435b3ad80482d309e3575625d1e5b" }
 

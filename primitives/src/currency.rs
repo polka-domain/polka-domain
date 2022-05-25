@@ -72,25 +72,21 @@ macro_rules! create_currency_id {
 			fn currency_id(&self) -> Option<u8> {
 				match self {
 					$(CurrencyId::Token(TokenSymbol::$symbol) => Some($val),)*
-					_ => None,
 				}
 			}
 			fn name(&self) -> Option<&str> {
 				match self {
 					$(CurrencyId::Token(TokenSymbol::$symbol) => Some($name),)*
-					_ => None,
 				}
 			}
 			fn symbol(&self) -> Option<&str> {
 				match self {
 					$(CurrencyId::Token(TokenSymbol::$symbol) => Some(stringify!($symbol)),)*
-					_ => None,
 				}
 			}
 			fn decimals(&self) -> Option<u8> {
 				match self {
 					$(CurrencyId::Token(TokenSymbol::$symbol) => Some($deci),)*
-					_ => None,
 				}
 			}
 		}
