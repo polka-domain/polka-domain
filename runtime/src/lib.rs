@@ -613,6 +613,8 @@ impl orml_tokens::Config for Runtime {
 	type OnDust = orml_tokens::TransferDust<Runtime, TreasuryAccount>;
 	type WeightInfo = ();
 	type DustRemovalWhitelist = DustRemovalWhitelist;
+	type MaxReserves = MaxReserves;
+	type ReserveIdentifier = ReserveIdentifier;
 }
 
 pub const NATIVE_CURRENCY_ID: CurrencyId = CurrencyId::Token(TokenSymbol::NAME);
