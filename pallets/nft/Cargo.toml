@@ -6,7 +6,7 @@ authors = ["Alkaid <alkaidwe@gmail.com>"]
 edition = "2021"
 
 [dependencies]
-serde = { version = "1.0.136", optional = true }
+serde = { version = "1.0.137", optional = true }
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false }
 enumflags2 = { version = "0.6.3" }
 scale-info = { version = "2.1.1", default-features = false, features = ["derive"] }
