@@ -35,7 +35,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: nightly-2021-11-07
+          toolchain: nightly-2022-05-11
           target: wasm32-unknown-unknown
           default: true
       - name: Check
