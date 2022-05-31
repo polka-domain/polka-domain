@@ -16,7 +16,7 @@ derive_more = "0.99.17"
 exit-future = "0.2.0"
 futures = { version = "0.3.21", features = ["compat"] }
 log = "0.4.17"
-parking_lot = "0.12.0"
+parking_lot = "0.12.1"
 trie-root = "0.17.0"
 codec = { package = "parity-scale-codec", version = "3.0.0" }
 serde = { version = "1.0.137", features = ["derive"] }
