@@ -21,7 +21,7 @@ trie-root = "0.17.0"
 codec = { package = "parity-scale-codec", version = "3.0.0" }
 serde = { version = "1.0.137", features = ["derive"] }
 hex-literal = "0.3.4"
-serde_json = { version = "1.0.81" }
+serde_json = { version = "1.0.87" }
 
 # Parachain dependencies
 parachain-runtime = { package = "polka-domain-runtime", path = "../runtime" }
